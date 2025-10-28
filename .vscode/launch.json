@@ -8,8 +8,8 @@
       "name": "Python Debugger: Current File",
       "type": "debugpy",
       "request": "launch",
-      "program": "src/__main__.py",
-      // "module": "examples.dyscom.example_dyscom_send_file",
+      // "program": "src/__main__.py",
+      "module": "examples.mid_level.example_mid_level_update",
       "justMyCode": false,
       // "args": ["COM3"],
       "console": "integratedTerminal"

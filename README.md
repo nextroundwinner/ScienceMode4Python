@@ -64,6 +64,8 @@ Python 3.11 or higher
     - Demonstrates how to use mid level layer, where a stimulation pattern is send to the stimulator and the device automatically executes the pattern by itself for 15s
   - `python -m examples.mid_level.example_mid_level`
     - Demonstrates how to use mid level layer, where a stimulation pattern is send to the stimulator and the device automatically executes the pattern by itself until user ends stimulation by keyboard
+  - `python -m examples.mid_level.example_mid_level_update`
+    - Demonstrates how to use mid level layer, to toggle stimulation channels by keyboard
 - Low level layer
   - `python -m examples.low_level.example_low_level`
     - Demonstrates how to use low level layer, where host has to trigger stimulation manually, in this case by pressing a key 
@@ -128,4 +130,4 @@ Python 3.11 or higher
 - Added sample that demonstrates how to read measurement data files from I24 devices
 
 ## 0.0.18
-- More documentation
+- Fixed error for mid level update when not using all channels

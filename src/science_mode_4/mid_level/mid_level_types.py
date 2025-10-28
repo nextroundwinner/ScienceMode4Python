@@ -43,10 +43,22 @@ class MidLevelChannelConfiguration():
         return self._is_active
 
 
+    @is_active.setter
+    def is_active(self, is_active: bool):
+        """Setter for is active"""
+        self._is_active = is_active
+
+
     @property
     def ramp(self) -> int:
         """Getter for ramp"""
         return self._ramp
+
+
+    @ramp.setter
+    def ramp(self, ramp: int):
+        """Setter for ramp"""
+        self._ramp = ramp
 
 
     @property
@@ -55,7 +67,19 @@ class MidLevelChannelConfiguration():
         return self._period_in_ms
 
 
+    @period_in_ms.setter
+    def period_in_ms(self, period_in_ms: int):
+        """Setter for period in ms"""
+        self._period_in_ms = period_in_ms
+
+
     @property
     def points(self) -> list[ChannelPoint]:
         """Getter for points"""
         return self._points
+
+
+    @points.setter
+    def points(self, points: list[ChannelPoint]):
+        """Setter for points"""
+        self._points = points

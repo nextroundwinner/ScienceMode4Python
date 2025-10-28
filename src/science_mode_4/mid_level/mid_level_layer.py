@@ -31,7 +31,9 @@ class LayerMidLevel(Layer):
 
 
     async def update(self, channel_configuration: list[MidLevelChannelConfiguration]):
-        """Send mid level update command and waits for response"""
+        """Send mid level update command and waits for response.
+        channel_configuration describes configuration for each channel, channel number is the index in list,
+        if some channels are not used, use None for this index"""
         p = PacketMidLevelUpdate()
         p.channel_configuration = channel_configuration
         ack: PacketMidLevelUpdateAck = await self.send_packet_and_wait(p)
