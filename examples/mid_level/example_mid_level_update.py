@@ -17,7 +17,8 @@ async def main() -> int:
     p1: ChannelPoint = ChannelPoint(200, 20)
     p2: ChannelPoint = ChannelPoint(100, 0)
     p3: ChannelPoint = ChannelPoint(200, -20)
-    # channel configuration, we want to ignore first and last two channels
+    # channel configuration
+    # we want to ignore first and last two channels (just for demonstration purpose)
     # we need to pad list with None to achieve correct indices
     # [None, None, ChannelConfig, ChannelConfig, ChannelConfig, ChannelConfig]
     channel_config = [MidLevelChannelConfiguration(False, 3, 20, [p1, p2, p3]) for x in range(4)]
@@ -34,9 +35,12 @@ async def main() -> int:
             return True
         if  "1" <= input_value <= "8":
             index = int(input_value) - 1
+            # check if index is in range of channel_config
             if 0 <= index < len(channel_config):
                 cc = channel_config[index]
+                # check if index contains a ChannelConfiguration object
                 if cc is not None:
+                    # toggle active
                     cc.is_active = not cc.is_active
                     asyncio.run(mid_level.update(channel_config))
                 else:
