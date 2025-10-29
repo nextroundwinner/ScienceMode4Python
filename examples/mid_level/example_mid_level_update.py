@@ -18,7 +18,7 @@ async def main() -> int:
     p2: ChannelPoint = ChannelPoint(100, 0)
     p3: ChannelPoint = ChannelPoint(200, -20)
     # channel configuration
-    # we want to ignore first and last two channels (just for demonstration purpose)
+    # we want to ignore first and last two channels (just for demonstration purpose how to handle unused channels)
     # we need to pad list with None to achieve correct indices
     # [None, None, ChannelConfig, ChannelConfig, ChannelConfig, ChannelConfig]
     channel_config = [MidLevelChannelConfiguration(False, 3, 20, [p1, p2, p3]) for x in range(4)]
@@ -55,6 +55,7 @@ async def main() -> int:
         return False
 
     print("Usage: press 1-8 to toggle channel, press q to quit")
+    print("Only channels 3-6 have a channel configuration (see comments where configuration is created)")
     # create keyboard input thread for non blocking console input
     keyboard_input_thread = KeyboardInputThread(input_callback)
 
