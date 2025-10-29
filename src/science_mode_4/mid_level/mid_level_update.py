@@ -26,6 +26,8 @@ class PacketMidLevelUpdate(Packet):
     @channel_configuration.setter
     def channel_configuration(self, channel_configuration: list[MidLevelChannelConfiguration]):
         """Setter for channel configuration"""
+        if len(channel_configuration) > 8:
+            raise ValueError(f"Mid level support 8 channels at max, given length {len(channel_configuration)}")
         self._channel_configuration = channel_configuration
 
 
@@ -37,7 +39,7 @@ class PacketMidLevelUpdate(Packet):
 
         for x in range(8):
             c: MidLevelChannelConfiguration | None = self._channel_configuration[x] if x < len(self._channel_configuration) else None
-            if c:
+            if c is not None and c.is_active:
                 bb.append_bytes(c.get_data())
 
         return bb.get_bytes()
