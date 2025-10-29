@@ -32,9 +32,9 @@ async def main() -> int:
         if input_value == "q":
             # end keyboard input thread
             return True
-        elif input_value >= '1' and input_value <= '8':
+        if  "1" <= input_value <= "8":
             index = int(input_value) - 1
-            if index >= 0 and index < len(channel_config):
+            if 0 <= index < len(channel_config):
                 cc = channel_config[index]
                 if cc is not None:
                     cc.is_active = not cc.is_active
@@ -45,7 +45,7 @@ async def main() -> int:
                 print("Invalid channel config index")
 
             return False
-                
+
 
         print("Invalid command")
         return False
