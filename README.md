@@ -131,3 +131,6 @@ Python 3.11 or higher
 
 ## 0.0.18
 - Fixed error for mid level update when not using all channels
+
+## 0.0.19
+- Fixed error in ByteBuilder when printing object
