@@ -1,5 +1,5 @@
 """Provides a ByteBuilder class for easier creation of a byte stream"""
-
+from typing import Self
 from .bit_vector import BitVector
 
 
@@ -45,7 +45,7 @@ class ByteBuilder():
             self._append_byte(x)
 
 
-    def extend_byte_builder(self, value: "ByteBuilder"):
+    def extend_byte_builder(self, value: Self):
         """Extends current data with value"""
         self._data.extend(value.get_bytes())
 
@@ -93,12 +93,12 @@ class ByteBuilder():
 
     def __repr__(self) -> str:
         b = self.get_bytes()
-        return f"length: {len(b)}, bytes: {b.hex(" ").upper()}"
+        return f"length: {len(b)}, bytes: {b.hex(' ').upper()}"
 
 
     def __str__(self) -> str:
         b = self.get_bytes()
-        return f"length: {len(b)}, bytes: {b.hex(" ").upper()}"
+        return f"length: {len(b)}, bytes: {b.hex(' ').upper()}"
 
 
     def _append_byte(self, value: int):
