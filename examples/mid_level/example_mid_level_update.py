@@ -2,16 +2,24 @@
 
 import sys
 import asyncio
+import threading
 
 from science_mode_4 import DeviceP24
 from science_mode_4 import MidLevelChannelConfiguration
 from science_mode_4 import ChannelPoint
 from science_mode_4 import SerialPortConnection
+from science_mode_4 import ResultAndError
 from examples.utils.example_utils import ExampleUtils, KeyboardInputThread
 
 
 async def main() -> int:
     """Main function"""
+
+    # lock is used to avoid interference of async functions of mid level layer
+    # mid_level.update() and mid_level.get_current_data() may run at the same
+    # time if a key is pressed at the moment when mid_level.get_current_data() is running
+    # (because they run on different event loops)
+    lock = threading.Lock()
 
     # some points
     p1: ChannelPoint = ChannelPoint(200, 20)
@@ -42,7 +50,8 @@ async def main() -> int:
                 if cc is not None:
                     # toggle active
                     cc.is_active = not cc.is_active
-                    asyncio.run(mid_level.update(channel_config))
+                    with lock:
+                        asyncio.run(mid_level.update(channel_config))
                 else:
                     print("Channel config is None")
             else:
@@ -74,15 +83,19 @@ async def main() -> int:
 
     # get mid level layer to call mid level commands
     mid_level = device.get_layer_mid_level()
-    # call init mid level, we want to stop on all stimulation errors
-    await mid_level.init(True)
+    # call init mid level, we do not want to stop on all stimulation errors to be able to 
+    # see errors during get_current_data
+    await mid_level.init(False)
     # set stimulation pattern, P24 device will now stimulate according this pattern
     await mid_level.update(channel_config)
 
+    possible_errors = [ResultAndError.ELECTRODE_ERROR, ResultAndError.PULSE_TIMEOUT_ERROR, ResultAndError.PULSE_LOW_CURRENT_ERROR]
     while keyboard_input_thread.is_alive():
         # we have to call get_current_data() every 1.5s to keep stimulation ongoing
-        update = await mid_level.get_current_data() # pylint:disable=unused-variable
-        # print(update)
+        with lock:
+            _, _, channel_error = await mid_level.get_current_data()
+            if any(v in possible_errors for v in channel_error):
+                print(f"Channel with error: {[(i, v.name) for i, v in enumerate(channel_error) if v != ResultAndError.NO_ERROR]}")
 
         await asyncio.sleep(1)
 

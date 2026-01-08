@@ -1,10 +1,19 @@
 """Provides packet classes for mid level GetCurrentData"""
 
+from typing import NamedTuple
+
 from science_mode_4.protocol.commands import Commands
 from science_mode_4.protocol.packet import Packet, PacketAck
 from science_mode_4.protocol.types import ResultAndError
 from science_mode_4.utils.bit_vector import BitVector
 from science_mode_4.utils.byte_builder import ByteBuilder
+
+
+class MidLevelGetCurrentDataResult(NamedTuple):
+    """Result for mid level get current data"""
+    result_error: ResultAndError
+    is_stimulation_active_per_channel: list[bool]
+    channel_error: list[ResultAndError]
 
 
 class PacketMidLevelGetCurrentData(Packet):
@@ -65,6 +74,6 @@ class PacketMidLevelGetCurrentDataAck(PacketAck):
 
 
     @property
-    def channel_error(self) -> list[int]:
+    def channel_error(self) -> list[ResultAndError]:
         """Getter for ChannelError"""
         return self._channel_error

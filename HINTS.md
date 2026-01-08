@@ -23,11 +23,13 @@ This page describes implementation details.
   - Handles extraction of packets from byte stream
 - Most functions communicating with the device are async functions using name schema _xxx_, because they wait for a matching acknowledge and return values from acknowledge
   - If no matching acknowledge or no acknowledge arrives in time, an exception is raised
+  - If a command has an error information and an error is set, an exception is raised
   - The async functions connection buffer handling is always identical:
     - Clear buffer
     - Send command
     - Process incoming data until the expected acknowledge arrives
     - More data remains in connection buffer
+  - Do not call async functions in parallel (e.g. from different event loops), because each function expects specific commands from the device and clears incoming data buffer
 - Additionally functions with naming schema _send_xxx_ are normal functions not waiting for acknowledge
   - The acknowledge needs to handled manually by using _PacketBuffer_ object from device
 
