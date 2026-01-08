@@ -61,7 +61,7 @@ class SerialPortConnection(Connection):
     def _read_intern(self) -> bytes:
         result = bytes()
         try:
-            # may raise a ClearCommError / The device does not recognize the command. 
+            # may raise a ClearCommError / The device does not recognize the command.
             if self._ser.in_waiting > 0:
                 result = self._ser.read_all()
         except serial.SerialException as e:

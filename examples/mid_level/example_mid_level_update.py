@@ -83,7 +83,7 @@ async def main() -> int:
 
     # get mid level layer to call mid level commands
     mid_level = device.get_layer_mid_level()
-    # call init mid level, we do not want to stop on all stimulation errors to be able to 
+    # call init mid level, we do not want to stop on all stimulation errors to be able to
     # see errors during get_current_data
     await mid_level.init(False)
     # set stimulation pattern, P24 device will now stimulate according this pattern
