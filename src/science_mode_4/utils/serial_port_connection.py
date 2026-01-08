@@ -5,6 +5,7 @@ import serial
 import serial.tools.list_ports
 import serial.tools.list_ports_common
 
+from science_mode_4.utils.logger import logger
 from .connection import Connection
 
 
@@ -59,7 +60,11 @@ class SerialPortConnection(Connection):
 
     def _read_intern(self) -> bytes:
         result = bytes()
-        if self._ser.in_waiting > 0:
-            result = self._ser.read_all()
+        try:
+            # may raise a ClearCommError / The device does not recognize the command.
+            if self._ser.in_waiting > 0:
+                result = self._ser.read_all()
+        except serial.SerialException as e:
+            logger().warning(e)
 
         return result
