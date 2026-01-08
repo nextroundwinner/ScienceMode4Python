@@ -9,7 +9,7 @@
       "type": "debugpy",
       "request": "launch",
       // "program": "src/__main__.py",
-      "module": "examples.mid_level.example_mid_level_update",
+      "module": "examples.bluetooth.example_bluetooth",
       "justMyCode": false,
       // "args": ["COM3"],
       "console": "integratedTerminal"
