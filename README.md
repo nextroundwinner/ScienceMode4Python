@@ -138,4 +138,8 @@ Python 3.11 or higher
 ## 0.0.20
 - Changed return value of LayerMidLevel.get_current_data()
 - Added locking to example_mid_level_update to synchronize call of async functions from different event loops
-- Added error handling in SerialPortConnection._read_intern() to prevent ClearComErrors 
+- Added error handling in SerialPortConnection._read_intern() to prevent ClearComErrors
+
+## 0.0.21
+- Added more error handling in SerialPortConnection._read_intern() to prevent ClearComErrors
+- Added getter for underlying serial object in SerialPortConnection
