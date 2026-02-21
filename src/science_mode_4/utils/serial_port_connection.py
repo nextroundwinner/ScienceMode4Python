@@ -84,7 +84,7 @@ class SerialPortConnection(Connection):
         except serial.SerialException as e:
             logger().warning(e)
 
-            logger().info("Close and open serial connection again and write last written data again")
+            logger().info("Close and open serial connection and write last written data again")
             # in case of a SerialException, close connection, open connection and
             # send last written data again
             try:
