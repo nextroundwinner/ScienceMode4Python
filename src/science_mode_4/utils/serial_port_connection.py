@@ -1,6 +1,7 @@
 """Provides a class for a serial connection"""
 
 import os
+import time
 import serial
 import serial.tools.list_ports
 import serial.tools.list_ports_common
@@ -10,7 +11,12 @@ from .connection import Connection
 
 
 class SerialPortConnection(Connection):
-    """Serial connection class"""
+    """Serial connection class
+    
+    port: name of the device
+
+    error_timeout: duration in seconds in case of an error between closing and opening connection
+    """
 
 
     @staticmethod
@@ -29,9 +35,12 @@ class SerialPortConnection(Connection):
         return filtered_ports
 
 
-    def __init__(self, port: str):
+    def __init__(self, port: str, error_timeout: int = 3):
         self._ser = serial.Serial(timeout = 0)
         self._ser.port = port
+        self._error_timeout = error_timeout
+
+        self._last_written_data = bytes()
 
 
     def open(self):
@@ -52,10 +61,18 @@ class SerialPortConnection(Connection):
     def write(self, data: bytes):
         super().write(data)
         self._ser.write(data)
+        # store last written data, to be able to send it again
+        self._last_written_data = data
 
 
     def clear_buffer(self):
         self._ser.reset_input_buffer()
+
+
+    @property
+    def ser(self) -> serial.Serial:
+        """Getter for underlying serial object"""
+        return self._ser
 
 
     def _read_intern(self) -> bytes:
@@ -66,5 +83,23 @@ class SerialPortConnection(Connection):
                 result = self._ser.read_all()
         except serial.SerialException as e:
             logger().warning(e)
+
+            logger().info("Close and open serial connection again and write last written data again")
+            # in case of a SerialException, close connection, open connection and
+            # send last written data again
+            try:
+                self.close()
+            except Exception: # pylint:disable=broad-exception-caught
+                pass
+
+            time.sleep(self._error_timeout)
+
+            try:
+                self.open()
+            except Exception: # pylint:disable=broad-exception-caught
+                pass
+
+            # device did not recognize last written data, so send it again
+            self.write(self._last_written_data)
 
         return result
