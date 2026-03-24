@@ -38,27 +38,37 @@ def callback(sender: BleakGATTCharacteristic, data: bytearray):
     print(f"{sender}: {data}")
 
 
+def handle_disconnect(device: BleakClient):
+    """disco"""    
+    print(f"Device was disconnected, {device}")
+
+
 async def main() -> int:
     """Main function"""
 
     mid_level_init_guid = "0000abcd-8e22-4541-9d4c-21edae82ed19"
     mid_level_init_ack_guid = "0000bcde-8e22-4541-9d4c-21edae82ed19"
     print("Scan...")
+    # devices = await BleakScanner.discover(return_adv=True)
     devices = await BleakScanner.discover()
 
-    for d in devices:
-        if d.name == "YOLO":
-            async with BleakClient(d) as client:
+    for value in devices:
+        # device = value[0]
+        device = value
+        if device.name == "YOLO":
+            # print(f"Advertising data: {value[1].manufacturer_data}")
+            async with BleakClient(device, disconnected_callback=handle_disconnect, timeout=10.0) as client:
+            # client = BleakClient(device)
+                # await client.connect()
                 await print_services(client)
 
-                await client.connect()
                 await client.start_notify(mid_level_init_ack_guid, callback)
                 # value = await client.read_gatt_char(mid_level_init_guid)
-                await client.write_gatt_char(mid_level_init_guid, "Hallo".encode("utf-8"), True)
+                await client.write_gatt_char(mid_level_init_guid, bytes([0xBB]), True)
                 # value = await client.read_gatt_char(mid_level_init_guid)
                 # print(value)
                 await asyncio.sleep(5)
-                await client.disconnect()
+                # await client.disconnect()
 
     return 0
 
