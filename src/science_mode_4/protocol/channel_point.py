@@ -18,10 +18,22 @@ class ChannelPoint():
         return self._current_in_milli_ampere
 
 
+    @current_in_milli_ampere.setter
+    def current_in_milli_ampere(self, value: float):
+        """Setter for current"""
+        self._current_in_milli_ampere = value
+
+
     @property
     def duration_in_micro_seconds(self) -> int:
         """Getter for duration"""
         return self._duration_in_micro_seconds
+
+
+    @duration_in_micro_seconds.setter
+    def duration_in_micro_seconds(self, value: int):
+        """Setter for duration"""
+        self._duration_in_micro_seconds = value
 
 
     def get_data(self) -> bytes:
