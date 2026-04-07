@@ -10,7 +10,7 @@ This page describes implementation details.
 - To create a _Device_ object, a _Connection_ object is required, use _SerialConnection_ to connect to a serial port
   - _Connection_ must be opened and closed
 - Call _device.initialize()_ to get a defined state of the device (it stops any active stimulation/measurement)
-- _Device_ object has layers to access commands
+- _Device\_xxx_ object has layers to access commands
   - _Layer_ object has functions to send commands to the device and process acknowledges
   - To access layer, use helper functions _get\_layer\_xxx_
   - _DeviceP24_ has layer general, low level and mid level
@@ -30,7 +30,7 @@ This page describes implementation details.
     - Process incoming data until the expected acknowledge arrives
     - More data remains in connection buffer
   - Do not call async functions in parallel (e.g. from different event loops), because each function expects specific commands from the device and clears incoming data buffer
-- Additionally functions with naming schema _send_xxx_ are normal functions not waiting for acknowledge
+- Additionally functions with naming schema _send\_xxx_ are normal functions not waiting for acknowledge
   - The acknowledge needs to handled manually by using _PacketBuffer_ object from device
 
 ## Logging
@@ -51,6 +51,7 @@ This page describes implementation details.
   - Call _init()_ to set device in mid level mode
   - Call _update()_ with stimulation pattern
   - Call _get_current_data()_ every 1.5s to keep stimulation ongoing
+  - Call _update()_ only when channel configuration must be changed
   - Call _stop()_ to end stimulation and leave mid level mode
 
 ## Low level layer (P24)

@@ -42,7 +42,7 @@ Python 3.11 or higher
 - Build project
   - `python -m build`
 - Install local library
-  - `pip install .\dist\science_mode_4-0.0.7-py3-none-any.whl` (adjust filename accordingly)
+  - `pip install --force .\dist\science_mode_4-0.0.7-py3-none-any.whl` (adjust filename accordingly)
 
 # Examples
 
@@ -54,6 +54,7 @@ Python 3.11 or higher
   - All examples try to find the serial port that a science mode device is connected to automatically
   - If that fails, provide serial port name as parameter, e.g. `python -m examples.<layer>.<example> COM3`
 - Good starting point for an simple stimulation is example `example_mid_level`
+- See also HINTS.md file for more information
 - Examples have own dependencies, see [Dependencies for examples](#dependencies-for-examples)
 - General layer
   - `python -m examples.general.example_general`
@@ -143,3 +144,6 @@ Python 3.11 or higher
 ## 0.0.21
 - Added more error handling in SerialPortConnection._read_intern() to prevent ClearComErrors
 - Added getter for underlying serial object in SerialPortConnection
+
+## 0.0.22
+- Library specific exception classes
