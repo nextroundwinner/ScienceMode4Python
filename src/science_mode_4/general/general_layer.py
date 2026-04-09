@@ -1,5 +1,6 @@
 """Provides general layer"""
 
+from science_mode_4.protocol.exceptions import ProtocolError
 from science_mode_4.protocol.packet_number_generator import PacketNumberGenerator
 from science_mode_4.protocol.packet_factory import PacketFactory
 from science_mode_4.layer import Layer
@@ -70,7 +71,7 @@ class LayerGeneral(Layer):
         p = PacketGeneralGetStimStatus()
         ack: PacketGeneralGetStimStatusAck = await self.send_packet_and_wait(p)
         if not ack.successful:
-            raise ValueError("Error get stim status")
+            raise ProtocolError("Error get stim status")
         logger().info("Get stim status: %s, active: %r", ack.stim_status.name, ack.high_voltage_on)
         return GetStimStatusResult(ack.stim_status, ack.high_voltage_on)
 
@@ -80,7 +81,7 @@ class LayerGeneral(Layer):
         p = PacketGeneralGetExtendedVersion()
         ack: PacketGeneralGetExtendedVersionAck = await self.send_packet_and_wait(p)
         if not ack.successful:
-            raise ValueError("Error get extended version")
+            raise ProtocolError("Error get extended version")
         self._firmware_version = ack.firmware_version
         self._science_mode_version = ack.science_mode_version
         logger().info("Get version, firmware version: %s science mode version: %s, firmware hash: %s, hash type: %s, is valid hash: %r",\
