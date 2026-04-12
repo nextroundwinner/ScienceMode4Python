@@ -4,6 +4,9 @@
 
 Pure Python implementation of HasomedScience ScienceMode 4 protocol for P24 (https://github.com/ScienceMode/ScienceMode4_P24) and I24 (https://github.com/ScienceMode/ScienceMode4_I24) devices. To use this library see section [Installation](#installation). Library and examples are tested under Windows, Linux and MacOS.
 
+See also [Hints](HINTS.md) file for more information.
+
+
 ## Requirements
 
 Python 3.11 or higher
@@ -54,7 +57,6 @@ Python 3.11 or higher
   - All examples try to find the serial port that a science mode device is connected to automatically
   - If that fails, provide serial port name as parameter, e.g. `python -m examples.<layer>.<example> COM3`
 - Good starting point for an simple stimulation is example `example_mid_level`
-- See also HINTS.md file for more information
 - Examples have own dependencies, see [Dependencies for examples](#dependencies-for-examples)
 - General layer
   - `python -m examples.general.example_general`
