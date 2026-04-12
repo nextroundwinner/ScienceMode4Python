@@ -46,6 +46,7 @@ class ExampleMidLevelUpdate():
                 if input_value == "q":
                     # end keyboard input thread
                     return True
+
                 if  "1" <= input_value <= "8":
                     index = int(input_value) - 1
                     # check if index is in range of channel_config
