@@ -18,7 +18,7 @@ class ExampleMidLevelUpdate():
     def __init__(self):
         # current in mA
         # can be changed via keyboard input
-        self._current = 100
+        self._current = 50
 
         # lock is used to avoid interference of async functions of mid level layer
         # mid_level.update() and mid_level.get_current_data() may run at the same
@@ -42,87 +42,104 @@ class ExampleMidLevelUpdate():
             """Callback call from keyboard input thread"""
             # print(f"Input value {input_value}")
 
-            if input_value == "q":
-                # end keyboard input thread
-                return True
-            if  "1" <= input_value <= "8":
-                index = int(input_value) - 1
-                # check if index is in range of channel_config
-                if 0 <= index < len(self._channel_config):
-                    cc = self._channel_config[index]
-                    # check if index contains a ChannelConfiguration object
-                    if cc is not None:
-                        # toggle active
-                        cc.is_active = not cc.is_active
-                        with self._lock:
-                            asyncio.run(mid_level.update(self._channel_config))
+            try:
+                if input_value == "q":
+                    # end keyboard input thread
+                    return True
+                if  "1" <= input_value <= "8":
+                    index = int(input_value) - 1
+                    # check if index is in range of channel_config
+                    if 0 <= index < len(self._channel_config):
+                        cc = self._channel_config[index]
+                        # check if index contains a ChannelConfiguration object
+                        if cc is not None:
+                            # toggle active
+                            cc.is_active = not cc.is_active
+                            with self._lock:
+                                asyncio.run(mid_level.update(self._channel_config))
+                        else:
+                            print("Channel config is None")
                     else:
-                        print("Channel config is None")
-                else:
-                    print("Invalid channel config index")
+                        print("Invalid channel config index")
 
+                    return False
+
+                if input_value in ["+", "-", "*", "/"]:
+                    match input_value:
+                        case "+":
+                            self._current += 1
+                        case "-":
+                            self._current -= 1
+                        case "*":
+                            self._current += 10
+                        case "/":
+                            self._current -= 10
+                    self._current = max(0, min(130, self._current))
+                    print(f"Change current to {self._current}")
+
+                    for x in self._channel_config:
+                        x.points[0].current_in_milli_ampere = self._current
+                        x.points[1].current_in_milli_ampere = -self._current
+
+                    with self._lock:
+                        asyncio.run(mid_level.update(self._channel_config))
+                    return False
+
+                print("Invalid command")
                 return False
-
-            if input_value in ["+", "-"]:
-                self._current += 1 if input_value == "+" else -1
-                self._current = max(0, min(130, self._current))
-                print(f"Change current to {self._current}")
-
-                for x in self._channel_config:
-                    x.points[0].current_in_milli_ampere = self._current
-                    x.points[1].current_in_milli_ampere = -self._current
-
-                with self._lock:
-                    asyncio.run(mid_level.update(self._channel_config))
-                return False
-
-            print("Invalid command")
-            return False
+            except Exception as e: # pylint:disable=broad-exception-caught
+                print(e)
+                return True
 
         print("Usage:")
         print("Press 1-8 to toggle channel")
-        print("Press + or - to increase or decrease current")
+        print("Press + or - to increase or decrease current by 1mA")
+        print("Press * or / to increase or decrease current by 10mA")
         print("Press q to quit")
 
         # create keyboard input thread for non blocking console input
         keyboard_input_thread = KeyboardInputThread(input_callback)
 
-        # get comport from command line argument
-        com_port = ExampleUtils.get_comport_from_commandline_argument()
-        # create serial port connection
-        connection = SerialPortConnection(com_port)
-        # open connection, now we can read and write data
-        connection.open()
+        try:
+            # get comport from command line argument
+            com_port = ExampleUtils.get_comport_from_commandline_argument()
+            # create serial port connection
+            connection = SerialPortConnection(com_port)
+            # open connection, now we can read and write data
+            connection.open()
 
-        # create science mode device
-        device = DeviceP24(connection)
-        # call initialize to get basic information (serial, versions) and stop any active stimulation/measurement
-        # to have a defined state
-        await device.initialize()
+            # create science mode device
+            device = DeviceP24(connection)
+            # call initialize to get basic information (serial, versions) and stop any active stimulation/measurement
+            # to have a defined state
+            await device.initialize()
 
-        # get mid level layer to call mid level commands
-        mid_level = device.get_layer_mid_level()
-        # call init mid level, we do not want to stop on all stimulation errors to be able to
-        # see errors during get_current_data
-        await mid_level.init(False)
-        # set stimulation pattern, P24 device will now stimulate according this pattern
-        await mid_level.update(self._channel_config)
+            # get mid level layer to call mid level commands
+            mid_level = device.get_layer_mid_level()
+            # call init mid level, we do not want to stop on all stimulation errors to be able to
+            # see errors during get_current_data
+            await mid_level.init(False)
+            # set stimulation pattern, P24 device will now stimulate according this pattern
+            await mid_level.update(self._channel_config)
 
-        possible_errors = [ResultAndError.ELECTRODE_ERROR, ResultAndError.PULSE_TIMEOUT_ERROR, ResultAndError.PULSE_LOW_CURRENT_ERROR]
-        while keyboard_input_thread.is_alive():
-            # we have to call get_current_data() every 1.5s to keep stimulation ongoing
-            with self._lock:
-                _, _, channel_error = await mid_level.get_current_data()
-                if any(v in possible_errors for v in channel_error):
-                    print(f"Channel with error: {[(i, v.name) for i, v in enumerate(channel_error) if v != ResultAndError.NO_ERROR]}")
+            possible_errors = [ResultAndError.ELECTRODE_ERROR, ResultAndError.PULSE_TIMEOUT_ERROR, ResultAndError.PULSE_LOW_CURRENT_ERROR]
+            while keyboard_input_thread.is_alive():
+                # we have to call get_current_data() every 1.5s to keep stimulation ongoing
+                with self._lock:
+                    _, _, channel_error = await mid_level.get_current_data()
+                    if any(v in possible_errors for v in channel_error):
+                        print(f"Channel with error: {[(i, v.name) for i, v in enumerate(channel_error) if v != ResultAndError.NO_ERROR]}")
 
-            await asyncio.sleep(1)
+                await asyncio.sleep(1)
 
-        # call stop mid level
-        await mid_level.stop()
+            # call stop mid level
+            await mid_level.stop()
 
-        # close serial port connection
-        connection.close()
+            # close serial port connection
+            connection.close()
+        except Exception as e: # pylint:disable=broad-exception-caught
+            print(e)
+
         return 0
 
 

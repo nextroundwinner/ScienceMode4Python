@@ -28,7 +28,7 @@ This page describes implementation details.
     - Clear buffer
     - Send command
     - Process incoming data until the expected acknowledge arrives
-    - More data remains in connection buffer
+    - More data may remain in connection buffer
   - Do not call async functions in parallel (e.g. from different event loops), because each function expects specific commands from the device and clears incoming data buffer
 - Additionally functions with naming schema _send\_xxx_ are normal functions not waiting for acknowledge
   - The acknowledge needs to handled manually by using _PacketBuffer_ object from device
@@ -40,6 +40,13 @@ This page describes implementation details.
   - `logger().setLevel(logging.DEBUG)`
 - For better performance, disable logger
   - `logger().disabled = True`
+
+## Error handling
+- Functions raise a ValueError if an input parameter is invalid
+- Functions communicating with the device raise a ProtocolError if device does not return a matching acknowledge or returns an error
+  - Communication error may occur when setting high current for P24 depending on USB-PC port and USB cable
+- _SerialPortConnection_ raise _serial.SerialException_ if unable to open/read/write serial port
+- _UsbConnection_ raise a _usb.core.USBError_ if unable to open/read/write usb device
 
 ## General layer (all devices)
 - Contains functions to get common information like device serial or firmware version
