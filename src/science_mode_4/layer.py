@@ -1,5 +1,6 @@
 """Provides base class for all ScienceMode layers"""
 
+from .protocol.exceptions import ProtocolError
 from .protocol.protocol_helper import ProtocolHelper
 from .protocol.types import ResultAndError
 from .protocol.packet import Packet, PacketAck
@@ -41,4 +42,4 @@ class Layer():
     def _check_result_error(self, result_error: ResultAndError, packet_name: str):
         """Check if result_error contains an error and if yes prints packet_name"""
         if result_error != ResultAndError.NO_ERROR:
-            raise ValueError(f"Error {packet_name} {result_error.name}")
+            raise ProtocolError(f"Error {packet_name} {result_error.name}")

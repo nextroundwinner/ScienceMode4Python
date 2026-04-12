@@ -16,6 +16,6 @@ from .device_i24 import *
 
 try:
     __version__ = version("science_mode_4")
-    logger().info("Library version %s", __version__)
+    logger().info("science_mode_4 library version %s", __version__)
 except PackageNotFoundError:
     pass

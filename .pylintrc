@@ -1,6 +1,7 @@
 [MAIN]
 max-line-length=150
 max-attributes=15
+max-branches=15
 
 [DESIGN]
 max-statements=100

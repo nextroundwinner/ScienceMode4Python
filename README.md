@@ -4,6 +4,9 @@
 
 Pure Python implementation of HasomedScience ScienceMode 4 protocol for P24 (https://github.com/ScienceMode/ScienceMode4_P24) and I24 (https://github.com/ScienceMode/ScienceMode4_I24) devices. To use this library see section [Installation](#installation). Library and examples are tested under Windows, Linux and MacOS.
 
+See also [Hints](HINTS.md) file for more information.
+
+
 ## Requirements
 
 Python 3.11 or higher
@@ -42,7 +45,7 @@ Python 3.11 or higher
 - Build project
   - `python -m build`
 - Install local library
-  - `pip install .\dist\science_mode_4-0.0.7-py3-none-any.whl` (adjust filename accordingly)
+  - `pip install --force .\dist\science_mode_4-0.0.7-py3-none-any.whl` (adjust filename accordingly)
 
 # Examples
 
@@ -143,3 +146,6 @@ Python 3.11 or higher
 ## 0.0.21
 - Added more error handling in SerialPortConnection._read_intern() to prevent ClearComErrors
 - Added getter for underlying serial object in SerialPortConnection
+
+## 0.0.22
+- Library specific exception classes

@@ -63,7 +63,7 @@ class PacketMidLevelGetCurrentDataAck(PacketAck):
 
     @property
     def result_error(self) -> ResultAndError:
-        """Getter for ResultError"""
+        """Getter for ResultError, possible values: NO_ERROR, ELECTRODE_ERROR, PULSE_TIMEOUT_ERROR, PULSE_LOW_CURRENT_ERROR"""
         return self._result_error
 
 

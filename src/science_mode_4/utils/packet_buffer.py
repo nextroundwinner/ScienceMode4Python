@@ -1,5 +1,6 @@
 """Provides a packet buffer functionality for more async handling of packets and acknowledges"""
 
+from science_mode_4.protocol.exceptions import ProtocolError
 from science_mode_4.protocol.packet import Packet
 from science_mode_4.protocol.packet_factory import PacketFactory
 from science_mode_4.protocol.protocol import Protocol
@@ -51,7 +52,7 @@ class PacketBuffer():
         if key in self._open_acknowledges:
             self._open_acknowledges[key] -= 1
         else:
-            raise ValueError(f"Remove non existing acknowledge from packet buffer, command {packet.command}, number {packet.number}")
+            raise ProtocolError(f"Remove non existing acknowledge from packet buffer, command {packet.command}, number {packet.number}")
 
 
     def print_open_acknowledge(self):

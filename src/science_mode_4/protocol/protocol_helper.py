@@ -5,6 +5,7 @@ import asyncio
 from science_mode_4.general.general_error import PacketGeneralError
 from science_mode_4.general.general_unknown_command import PacketGeneralUnknownCommand
 from science_mode_4.utils.packet_buffer import PacketBuffer
+from .exceptions import ProtocolError
 from .protocol import Protocol
 from .commands import Commands
 from .packet import Packet, PacketAck
@@ -47,10 +48,10 @@ class ProtocolHelper:
                     # check if we got an error
                     if ack.command == Commands.GENERAL_ERROR:
                         ge: PacketGeneralError = ack
-                        raise ValueError(f"General error packet {ge.result_error.name}")
+                        raise ProtocolError(f"General error packet {ge.result_error.name}")
                     if ack.command == Commands.UNKNOWN_COMMAND:
                         uc: PacketGeneralUnknownCommand = ack
-                        raise ValueError(f"Unknown command packet {uc.result_error.name}")
+                        raise ProtocolError(f"Unknown command packet {uc.result_error.name}")
 
                     # discard acknowledge and continue
 
@@ -62,4 +63,4 @@ class ProtocolHelper:
 
         # we got no response in time, so remove open acknowledges
         packet_buffer.remove_open_acknowledge(packet)
-        raise ValueError(f"No valid answer for packet {packet.command}")
+        raise ProtocolError(f"No valid answer for packet {packet.command}")

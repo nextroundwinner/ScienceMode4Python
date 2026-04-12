@@ -5,6 +5,7 @@ import struct
 
 from science_mode_4.layer import Layer
 from science_mode_4.protocol.commands import Commands
+from science_mode_4.protocol.exceptions import ProtocolError
 from science_mode_4.utils.logger import logger
 from .dyscom_types import DyscomFrequencyOut, DyscomGetOperationModeType, DyscomInitState, DyscomPowerModuleType,\
     DyscomPowerModulePowerType, DyscomSignalType, DyscomSysState, DyscomSysType
@@ -37,7 +38,7 @@ class LayerDyscom(Layer):
         ack: PacketDyscomInitAck = await self.send_packet_and_wait(p)
         self._check_result_error(ack.result_error, "DyscomInit")
         if ack.init_state not in [DyscomInitState.UNUSED, DyscomInitState.SUCCESS]:
-            raise ValueError(f"Dyscom error init {ack.init_state.name}")
+            raise ProtocolError(f"Dyscom error init {ack.init_state.name}")
 
         logger().info("Dyscom init, measurement_file_id: %s, state: %s, frequency: %s",\
                       ack.measurement_file_id, ack.init_state.name, ack.frequency_out.name)
@@ -143,7 +144,7 @@ class LayerDyscom(Layer):
         ack: PacketDyscomSysAck = await self.send_packet_and_wait(p)
         self._check_result_error(ack.result_error, "DyscomSys")
         if ack.state not in [DyscomSysState.SUCCESSFUL]:
-            raise ValueError(f"Dyscom error sys {ack.state.name}")
+            raise ProtocolError(f"Dyscom error sys {ack.state.name}")
 
         logger().info("Dyscom sys, type: %s, state: %s, filename: %s", ack.sys_type.name, ack.state.name, ack.filename)
         return DyscomSysResult(ack.sys_type, ack.state, ack.filename)
@@ -190,7 +191,7 @@ class LayerDyscom(Layer):
         """Gets content of a file. Device must be in Idle operating mode"""
         om = await self.get_operation_mode()
         if om != DyscomGetOperationModeType.IDLE:
-            raise ValueError(f"Error wrong operation mode {om.name}")
+            raise ProtocolError(f"Error wrong operation mode {om.name}")
 
         # get meta information and sets device in mode DATATRANSFER_PRE
         # we need number of blocks to know how many SendFile commands we expect
