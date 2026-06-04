@@ -149,3 +149,6 @@ Python 3.11 or higher
 
 ## 0.0.22
 - Library specific exception classes
+
+## 0.0.23
+- Added timeout parameters to SerialPortConnection constructor

@@ -35,12 +35,18 @@ class SerialPortConnection(Connection):
         return filtered_ports
 
 
-    def __init__(self, port: str, error_timeout: int = 3):
-        self._ser = serial.Serial(timeout = 0)
+    def __init__(self, port: str, read_timeout_ins_s: float = 0, write_timeout_ins_s: float = 1, error_timeout_in_s: float = 3):
+        self._ser = serial.Serial(timeout = read_timeout_ins_s, write_timeout=write_timeout_ins_s)
         self._ser.port = port
-        self._error_timeout = error_timeout
+        self._error_timeout_in_s = error_timeout_in_s
 
         self._last_written_data = bytes()
+
+
+    @property
+    def internal_serial(self) -> serial.Serial:
+        """Getter for internal pySerial object"""
+        return self._ser
 
 
     def open(self):
@@ -92,7 +98,7 @@ class SerialPortConnection(Connection):
             except Exception: # pylint:disable=broad-exception-caught
                 pass
 
-            time.sleep(self._error_timeout)
+            time.sleep(self._error_timeout_in_s)
 
             try:
                 self.open()
