@@ -9,6 +9,8 @@ jobs:
   build:
     name: Build distribution
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.get_version.outputs.version }}
 
     steps:
       - uses: actions/checkout@v6
@@ -27,6 +29,11 @@ jobs:
           --user
       - name: Build a binary wheel and a source tarball
         run: python3 -m build
+      - name: Get version from pyproject.toml
+        id: get_version
+        run: |
+          VERSION=$(python3 -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['project']['version'])")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
       - name: Store the distribution packages
         uses: actions/upload-artifact@v4
         with:
@@ -60,6 +67,7 @@ jobs:
       Sign the library with Sigstore
       and upload them to GitHub Release
     needs:
+      - build
       - publish-to-pypi
     runs-on: ubuntu-latest
 
@@ -82,18 +90,20 @@ jobs:
       - name: Create GitHub Release
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.build.outputs.version }}
         run: >-
           gh release create
-          "$GITHUB_REF_NAME"
+          "$VERSION"
           --repo "$GITHUB_REPOSITORY"
           --notes ""
       - name: Upload artifact signatures to GitHub Release
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.build.outputs.version }}
         # Upload to GitHub Release using the `gh` CLI.
         # `dist/` contains the built packages, and the
         # sigstore-produced signatures and certificates.
         run: >-
           gh release upload
-          "$GITHUB_REF_NAME" dist/**
+          "$VERSION" dist/**
           --repo "$GITHUB_REPOSITORY"
