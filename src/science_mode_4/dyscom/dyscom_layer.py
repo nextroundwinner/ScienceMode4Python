@@ -203,7 +203,7 @@ class LayerDyscom(Layer):
         # start measurement, so device send automatically SendFile packets
         await self.start()
 
-        result = bytes()
+        blocks: list[bytes] = []
         while True:
             # process all available packages
             ack = self.packet_buffer.get_packet_from_buffer()
@@ -211,7 +211,7 @@ class LayerDyscom(Layer):
                 if ack.command == Commands.DL_SEND_FILE:
                     # process SendFile data
                     sf: PacketDyscomSendFile = ack
-                    result += sf.data
+                    blocks.append(sf.data)
 
                     # send acknowledge for this packet, so device can send
                     # next block automatically
@@ -229,7 +229,7 @@ class LayerDyscom(Layer):
         await self.stop()
 
         # trim to filesize (because SendFile sends always data with blocksize)
-        result = result[0:file_by_name.filesize]
+        result = b"".join(blocks)[0:file_by_name.filesize]
         return result
 
 
