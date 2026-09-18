@@ -1,5 +1,4 @@
 """Provides a ByteBuilder class for easier creation of a byte stream"""
-from typing import Self
 from .bit_vector import BitVector
 
 
