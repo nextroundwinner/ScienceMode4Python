@@ -95,8 +95,10 @@ class BitVector():
 
 
     def __repr__(self) -> str:
-        return f"{type(self).__name__}(0b{self._data: _b})"
+        value = int.from_bytes(self.get_bytes(), "little")
+        return f"{type(self).__name__}(0b{value:_b})"
 
 
     def __str__(self) -> str:
-        return "0b" + format(self._data, "_b")
+        value = int.from_bytes(self.get_bytes(), "little")
+        return "0b" + format(value, "_b")

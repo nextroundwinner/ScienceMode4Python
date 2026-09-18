@@ -101,3 +101,19 @@ def test_get_bytes_pads_partial_last_byte():
 def test_iter_yields_all_bits_in_order():
     bv = BitVector.init_from_int(0b0110, 4)
     assert list(iter(bv)) == [0, 1, 1, 0]
+
+
+def test_repr_shows_value_as_binary():
+    bv = BitVector.init_from_int(0x1234, 16)
+    assert repr(bv) == "BitVector(0b1_0010_0011_0100)"
+
+
+def test_str_shows_value_as_binary():
+    bv = BitVector.init_from_int(0b1011, 4)
+    assert str(bv) == "0b1011"
+
+
+def test_repr_and_str_of_empty_bitvector():
+    bv = BitVector()
+    assert repr(bv) == "BitVector(0b0)"
+    assert str(bv) == "0b0"
