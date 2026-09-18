@@ -25,5 +25,14 @@ dependencies = [
   "libusb-package"
 ]
 
+[project.optional-dependencies]
+test = [
+  "pytest>=7"
+]
+
 [project.urls]
 Homepage = "https://github.com/nextroundwinner/ScienceModePython"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

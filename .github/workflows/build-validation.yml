@@ -15,15 +15,18 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: "3.x"
-      - name: Install pypa/build/pylint/requirements.txt
+      - name: Install pypa/build/pylint/pytest/requirements.txt
         run: >-
           python3 -m
           pip install
           build
           pylint
+          pytest
           -r src/science_mode_4/requirements.txt
           -r examples/requirements.txt
           --user
+      - name: Run tests
+        run: python3 -m pytest tests/ -v
       - name: Build a binary wheel and a source tarball
         run: python3 -m build
       - name: Run linter lib

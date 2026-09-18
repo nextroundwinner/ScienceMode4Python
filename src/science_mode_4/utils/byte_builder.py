@@ -45,11 +45,6 @@ class ByteBuilder():
             self._append_byte(x)
 
 
-    def extend_byte_builder(self, value: Self):
-        """Extends current data with value"""
-        self._data.extend(value.get_bytes())
-
-
     def set_bit_to_position(self, value: int, bit_position: int, bit_count: int):
         """
         Set bits starting with bit_position and a count of bit_count to value
