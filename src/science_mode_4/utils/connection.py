@@ -1,5 +1,6 @@
 """Provides a base class for a connection"""
 
+import logging
 from abc import ABC, abstractmethod
 
 from .logger import logger
@@ -26,13 +27,14 @@ class Connection(ABC):
 
     def write(self, data: bytes):
         """Write data to connection"""
-        logger().debug("Outgoing data, length: %d, bytes: %s", len(data), data.hex(" ").upper())
+        if logger().isEnabledFor(logging.DEBUG):
+            logger().debug("Outgoing data, length: %d, bytes: %s", len(data), data.hex(" ").upper())
 
 
     def read(self) -> bytes:
         """Read all data from connection"""
         result = self._read_intern()
-        if len(result) > 0:
+        if len(result) > 0 and logger().isEnabledFor(logging.DEBUG):
             logger().debug("Incoming data, length: %d, bytes: %s", len(result), result.hex(" ").upper())
         return result
 
