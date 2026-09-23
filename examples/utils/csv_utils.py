@@ -49,10 +49,11 @@ class CsvHelper:
             csv_writer.writerow(self._header)
 
             while self._is_running:
-                while self._data_queue.qsize() > 0:
-                    try:
-                        data = self._data_queue.get_nowait()
-                        csv_writer.writerow(data)
-                    except Empty:
-                        # No new data in the queue
-                        pass
+                try:
+                    # blocking get with timeout: releases the GIL while waiting instead
+                    # of busy-spinning, which was starving the main thread doing serial I/O
+                    data = self._data_queue.get(timeout=0.1)
+                    csv_writer.writerow(data)
+                except Empty:
+                    # No new data in the queue
+                    pass
