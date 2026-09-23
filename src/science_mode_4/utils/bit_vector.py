@@ -59,15 +59,32 @@ class BitVector():
         """Set length to new_length, does preserve current data"""
         length_difference = new_length - len(self._data)
         if length_difference > 0:
-            self.extend(BitVector.init_from_int(0, length_difference))
+            self._data.extend([0] * length_difference)
         elif length_difference < 0:
-            self._data = self._data[0:new_length]
+            del self._data[new_length:]
 
 
     def extend(self, value: "BitVector"):
         """Extends current data with value"""
         if isinstance(value, BitVector):
             self._data += value._data # pylint: disable=protected-access
+
+
+    def extend_bits_from_int(self, value: int, bit_count: int):
+        """Appends bit_count bits (LSB first) taken from value at the end, without
+        the intermediate zero-fill-then-overwrite of set_length() + __setitem__()"""
+        self._data.extend((value >> x) & 0x1 for x in range(bit_count))
+
+
+    def set_bits_from_int(self, value: int, position: int, bit_count: int):
+        """Sets bit_count bits (LSB first) taken from value starting at position, extending
+        length if necessary. Skips the per-bit bounds/type validation of __setitem__(),
+        which is redundant here because position/bit_count are controlled by the caller"""
+        new_length = max(len(self._data), position + bit_count)
+        self.set_length(new_length)
+        data = self._data
+        for x in range(bit_count):
+            data[position + x] = (value >> x) & 0x1
 
 
     def get_bytes(self) -> bytes:

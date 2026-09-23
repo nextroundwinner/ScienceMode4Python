@@ -78,6 +78,26 @@ def test_extend_appends_bits_from_other_bitvector():
     assert list(bv) == [1, 0, 1]
 
 
+def test_extend_bits_from_int_appends_lsb_first():
+    bv = BitVector.init_from_int(0b1, 1)
+    bv.extend_bits_from_int(0b101, 3)
+    assert list(bv) == [1, 1, 0, 1]
+    assert bv.get_bytes() == bytes([0b1011])
+
+
+def test_set_bits_from_int_extends_length():
+    bv = BitVector()
+    bv.set_bits_from_int(0b101, 2, 3)
+    assert len(bv) == 5
+    assert list(bv) == [0, 0, 1, 0, 1]
+
+
+def test_set_bits_from_int_overwrites_existing_range():
+    bv = BitVector.init_from_int(0b1111, 4)
+    bv.set_bits_from_int(0b00, 1, 2)
+    assert list(bv) == [1, 0, 0, 1]
+
+
 def test_extend_ignores_non_bitvector_argument():
     # extend() silently does nothing if value is not a BitVector instance
     bv = BitVector.init_from_int(0b1, 1)

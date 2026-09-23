@@ -1,4 +1,7 @@
 [MAIN]
+# make sure tests/ resolves science_mode_4 against the local src/ package
+# instead of whatever version happens to be installed in site-packages
+init-hook='import sys; sys.path.insert(0, "src")'
 max-line-length=150
 max-attributes=15
 max-branches=15

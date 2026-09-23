@@ -49,10 +49,7 @@ class ByteBuilder():
         Set bits starting with bit_position and a count of bit_count to value
         This method extends data to make room for value
         """
-        new_length = max(len(self._data), bit_position + bit_count)
-        self._data.set_length(new_length)
-        for x in range(bit_count):
-            self._data[bit_position + x] = (value >> x) & 0x1
+        self._data.set_bits_from_int(value, bit_position, bit_count)
 
 
     def set_bytes_to_position(self, value: bytes, byte_position: int, byte_count: int):
@@ -97,7 +94,4 @@ class ByteBuilder():
 
     def _append_byte(self, value: int):
         """Append value at the end of data, value is treated as byte"""
-        start = len(self._data)
-        self._data.set_length(start + 8)
-        for x in range(8):
-            self._data[start + x] = (value >> x) & 0x1
+        self._data.extend_bits_from_int(value, 8)
