@@ -44,7 +44,7 @@ class PacketDyscomGetAckBatteryStatus(PacketDyscomGetAck):
                 self._voltage = struct.unpack("<BBbiI", data[2:13])
 
             for f in DyscomEnergyFlag:
-                if energy_state & (1 << f) == 1:
+                if f != DyscomEnergyFlag.UNDEFINED and energy_state & f == f:
                     self._energy_state.add(f)
 
 

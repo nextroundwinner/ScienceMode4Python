@@ -30,7 +30,7 @@ class PacketDyscomSendLiveData(PacketAck):
                 sample.signal_type = DyscomSignalType(data[start_index+4])
                 status = data[start_index+5]
                 for f in DyscomPowerLiveDataStatusFlag:
-                    if status & (1 << f) == 1:
+                    if status & f == f:
                         sample.status.add(f)
 
                 self._samples.append(sample)
