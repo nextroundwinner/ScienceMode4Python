@@ -79,7 +79,9 @@ class Protocol:
             start = buffer.find(bytes([Protocol.START_BYTE, Protocol.STUFFING_BYTE]), start)
             if start != -1:
                 # we found a start, so use minimal packet length as starting index to find stop
-                stop = buffer.find(bytes([Protocol.STOP_BYTE]), start + 12)
+                # (minimal packet: 1 start + 4 length + 4 crc + 2 payload + 1 stop = 12 bytes,
+                # so the stop byte of a minimal packet is at relative offset 11)
+                stop = buffer.find(bytes([Protocol.STOP_BYTE]), start + 11)
                 if stop != -1:
                     # we found a packet end, lets check if its valid
                     if Protocol.is_valid_packet_data(buffer[start:stop+1]):
