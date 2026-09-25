@@ -18,6 +18,8 @@ class MidLevelChannelConfiguration():
 
     def get_data(self) -> bytes:
         """Returns information as bytes"""
+        if len(self._points) == 0:
+            raise ValueError(f"Mid level update at least one point required {len(self.points)}")
         if len(self._points) > 16:
             raise ValueError(f"Mid level update maximum of 16 points allowed {len(self.points)}")
         if (self._ramp < 0) or (self._ramp > 15):
@@ -30,7 +32,7 @@ class MidLevelChannelConfiguration():
         bb.set_bit_to_position(self._ramp, 0, 4)
         bb.set_bit_to_position(len(self._points) - 1, 4, 4)
         bb.set_bit_to_position(0 if period_factor == 2 else 1, 8, 1)
-        bb.set_bit_to_position(self._period_in_ms * period_factor, 9, 15)
+        bb.set_bit_to_position(round(self._period_in_ms / period_factor), 9, 15)
         bb.swap(1, 2)
         for x in self.points:
             bb.append_bytes(x.get_data())
