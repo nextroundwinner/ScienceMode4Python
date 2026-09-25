@@ -32,7 +32,7 @@ class Protocol:
 
         bb.clear()
 
-        # stop byte
+        # start byte
         bb.append_byte(Protocol.START_BYTE)
         # packet length
         packet_length: int = len(stuffed_packet_data) + 10

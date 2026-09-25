@@ -86,7 +86,7 @@ class PacketBuffer():
             self._open_acknowledges[ack_data[0], ack_data[1]] -= 1
 
         # remove from buffer
-        self._buffer = self._buffer[start_stop[0] + start_stop[1] + 1:]
+        self._buffer = self._buffer[start_stop[1] + 1:]
         ack = self._packet_factory.create_packet_with_data(ack_data[0], ack_data[1], ack_data[2])
         return ack
 
