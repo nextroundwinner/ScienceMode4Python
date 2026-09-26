@@ -3,10 +3,20 @@
 from typing import NamedTuple
 
 from science_mode_4.protocol.commands import Commands
+from science_mode_4.protocol.exceptions import ProtocolError
 from science_mode_4.protocol.packet import Packet, PacketAck
 from science_mode_4.protocol.types import ResultAndError
 from science_mode_4.utils.bit_vector import BitVector
 from science_mode_4.utils.byte_builder import ByteBuilder
+
+# maps the 4 bit per-channel error code (Ml_get_current_data_ack) to the corresponding
+# ResultAndError value; only 0-3 are defined by the protocol
+_CHANNEL_ERROR_CODES = {
+    0: ResultAndError.NO_ERROR,
+    1: ResultAndError.ELECTRODE_ERROR,
+    2: ResultAndError.PULSE_TIMEOUT_ERROR,
+    3: ResultAndError.PULSE_LOW_CURRENT_ERROR,
+}
 
 
 class MidLevelGetCurrentDataResult(NamedTuple):
@@ -51,14 +61,9 @@ class PacketMidLevelGetCurrentDataAck(PacketAck):
             bb.append_bytes(data[3:7])
             for index, _ in enumerate(self._channel_error):
                 tmp = bb.get_bit_from_position(index * 4, 4)
-                if tmp == 0:
-                    self._channel_error[index] = ResultAndError.NO_ERROR
-                elif tmp == 1:
-                    self._channel_error[index] = ResultAndError.ELECTRODE_ERROR
-                elif tmp == 2:
-                    self._channel_error[index] = ResultAndError.PULSE_TIMEOUT_ERROR
-                elif tmp == 3:
-                    self._channel_error[index] = ResultAndError.PULSE_LOW_CURRENT_ERROR
+                if tmp not in _CHANNEL_ERROR_CODES:
+                    raise ProtocolError(f"Unknown mid level channel error code {tmp} for channel {index}")
+                self._channel_error[index] = _CHANNEL_ERROR_CODES[tmp]
 
 
     @property
