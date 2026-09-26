@@ -90,6 +90,12 @@ class BitVector():
         """Sets bit_count bits (LSB first) taken from value starting at position, extending
         length if necessary. Skips the per-bit bounds/type validation of __setitem__(),
         which is redundant here because position/bit_count are controlled by the caller"""
+        if position < 0:
+            # unlike __setitem__, data[position + x] below does not go through a bounds
+            # check, so a negative position would silently write via Python's negative
+            # index wraparound instead of at the intended (out of bounds) position
+            raise ValueError(f"Bit vector position must not be negative {position}")
+
         new_length = max(len(self._data), position + bit_count)
         self.set_length(new_length)
         data = self._data

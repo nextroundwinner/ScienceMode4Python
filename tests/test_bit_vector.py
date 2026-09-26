@@ -98,6 +98,15 @@ def test_set_bits_from_int_overwrites_existing_range():
     assert list(bv) == [1, 0, 0, 1]
 
 
+def test_set_bits_from_int_negative_position_raises():
+    # regression test: set_bits_from_int() writes via data[position + x] without going
+    # through __setitem__()'s bounds check, so a negative position used to silently write
+    # to the wrong bits via Python's negative index wraparound instead of failing
+    bv = BitVector.init_from_int(0b1111, 4)
+    with pytest.raises(ValueError):
+        bv.set_bits_from_int(0b1, -1, 1)
+
+
 def test_extend_ignores_non_bitvector_argument():
     # extend() silently does nothing if value is not a BitVector instance
     bv = BitVector.init_from_int(0b1, 1)

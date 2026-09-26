@@ -2,6 +2,8 @@
 # pylint: disable=missing-function-docstring
 # test names are self-explanatory, docstrings would only restate them
 
+import pytest
+
 from science_mode_4.utils.byte_builder import ByteBuilder
 
 
@@ -69,6 +71,28 @@ def test_set_bytes_to_position():
     bb = ByteBuilder()
     bb.set_bytes_to_position(bytes([0xAA, 0xBB]), 1, 2)
     assert bb.get_bytes() == bytes([0x00, 0xAA, 0xBB])
+
+
+def test_set_bit_to_position_negative_position_raises():
+    # regression test: negative bit_position used to be silently reinterpreted via
+    # Python's negative index wraparound in the underlying BitVector instead of failing
+    bb = ByteBuilder()
+    bb.append_byte(0x00)
+    with pytest.raises(ValueError):
+        bb.set_bit_to_position(1, -1, 1)
+
+
+def test_set_bytes_to_position_negative_position_raises():
+    bb = ByteBuilder()
+    with pytest.raises(ValueError):
+        bb.set_bytes_to_position(bytes([0xAA]), -1, 1)
+
+
+def test_get_bit_from_position_negative_position_raises():
+    bb = ByteBuilder()
+    bb.append_byte(0x01)
+    with pytest.raises(ValueError):
+        bb.get_bit_from_position(-1, 1)
 
 
 def test_swap_reverses_byte_order():
