@@ -33,3 +33,5 @@ jobs:
         run: pylint ./src
       - name: Run linter examples
         run: pylint ./examples
+      - name: Run linter tests
+        run: pylint ./tests
