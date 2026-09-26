@@ -41,7 +41,7 @@ def test_read_intern_retries_reopen_until_it_succeeds_without_raising():
 def test_read_intern_gives_up_after_max_reopen_attempts():
     # regression test: reopening must not retry forever, otherwise a permanently
     # disconnected device would hang the caller indefinitely. After
-    # _MAX_REOPEN_ATTEMPTS failures, the last error is raised instead of retrying again.
+    # max_port_reopen_attempts failures, the last error is raised instead of retrying again.
     connection, mock_ser = _make_connection_with_mock_serial()
     type(mock_ser).in_waiting = PropertyMock(side_effect=serial.SerialException("ClearCommError"))
     mock_ser.open.side_effect = serial.SerialException("still disconnected")
@@ -49,9 +49,22 @@ def test_read_intern_gives_up_after_max_reopen_attempts():
     with pytest.raises(serial.SerialException):
         connection._read_intern()
 
-    assert mock_ser.close.call_count == SerialPortConnection._MAX_REOPEN_ATTEMPTS
-    assert mock_ser.open.call_count == SerialPortConnection._MAX_REOPEN_ATTEMPTS
+    assert mock_ser.close.call_count == connection._max_port_reopen_attempts
+    assert mock_ser.open.call_count == connection._max_port_reopen_attempts
     mock_ser.write.assert_not_called()
+
+
+def test_read_intern_respects_custom_max_reopen_attempts():
+    connection = SerialPortConnection("COM_TEST", error_timeout_in_s=0, max_port_reopen_attempts=5)
+    mock_ser = MagicMock()
+    connection._ser = mock_ser
+    type(mock_ser).in_waiting = PropertyMock(side_effect=serial.SerialException("ClearCommError"))
+    mock_ser.open.side_effect = serial.SerialException("still disconnected")
+
+    with pytest.raises(serial.SerialException):
+        connection._read_intern()
+
+    assert mock_ser.open.call_count == 5
 
 
 def test_read_intern_resends_last_written_data_when_reopen_succeeds():
