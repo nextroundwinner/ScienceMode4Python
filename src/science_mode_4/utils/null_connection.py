@@ -24,10 +24,9 @@ class NullConnection(Connection):
         return self._is_open
 
 
-    def write(self, data: bytes):
+    def clear_buffer(self):
         pass
 
 
-    def read(self) -> bytes:
-        result = []
-        return bytes(result)
+    def _read_intern(self) -> bytes:
+        return bytes()
