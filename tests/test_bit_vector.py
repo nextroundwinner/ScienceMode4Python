@@ -137,3 +137,32 @@ def test_repr_and_str_of_empty_bitvector():
     bv = BitVector()
     assert repr(bv) == "BitVector(0b0)"
     assert str(bv) == "0b0"
+
+
+def test_eq_true_for_equal_bit_content():
+    assert BitVector.init_from_int(0b1011, 4) == BitVector.init_from_int(0b1011, 4)
+
+
+def test_eq_false_for_different_bit_content():
+    assert BitVector.init_from_int(0b1011, 4) != BitVector.init_from_int(0b1010, 4)
+
+
+def test_eq_false_for_same_value_but_different_length():
+    # trailing zero bits are part of the vector's identity, not just its integer value
+    assert BitVector.init_from_int(0b1, 1) != BitVector.init_from_int(0b1, 2)
+
+
+def test_eq_with_non_bitvector_is_false():
+    assert BitVector.init_from_int(0b1, 1) != "not a bitvector"
+
+
+def test_hash_is_consistent_with_eq():
+    a = BitVector.init_from_int(0b1011, 4)
+    b = BitVector.init_from_int(0b1011, 4)
+    assert hash(a) == hash(b)
+
+
+def test_hash_allows_use_as_set_member():
+    a = BitVector.init_from_int(0b1011, 4)
+    b = BitVector.init_from_int(0b1011, 4)
+    assert len({a, b}) == 1

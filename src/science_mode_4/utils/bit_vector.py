@@ -55,6 +55,16 @@ class BitVector():
         yield from self._data
 
 
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, BitVector):
+            return NotImplemented
+        return self._data == other._data # pylint: disable=protected-access
+
+
+    def __hash__(self) -> int:
+        return hash(tuple(self._data))
+
+
     def set_length(self, new_length: int):
         """Set length to new_length, does preserve current data"""
         length_difference = new_length - len(self._data)
