@@ -25,7 +25,11 @@ class PacketGeneralGetDeviceIdAck(PacketAck):
 
         if not data is None:
             self._result_error = ResultAndError(data[0])
-            self._device_id = data[1:11].decode()
+            # device id is a fixed 10 byte char array, null padded/terminated -> strip
+            # the padding so callers don't get a trailing "\x00" in the string
+            raw_device_id = data[1:11]
+            end = raw_device_id.find(b"\x00")
+            self._device_id = raw_device_id[:end if end != -1 else len(raw_device_id)].decode()
 
 
     @property
