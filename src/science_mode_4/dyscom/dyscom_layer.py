@@ -204,26 +204,28 @@ class LayerDyscom(Layer):
         await self.start()
 
         blocks: list[bytes] = []
-        while True:
-            # process all available packages
-            ack = self.packet_buffer.get_packet_from_buffer()
-            if ack:
-                if ack.command == Commands.DL_SEND_FILE:
-                    # process SendFile data
-                    sf: PacketDyscomSendFile = ack
-                    blocks.append(sf.data)
 
-                    # send acknowledge for this packet, so device can send
-                    # next block automatically
-                    self.send_send_file_ack(sf.block_number)
+        if file_by_name.number_of_blocks > 0:
+            while True:
+                # process all available packages
+                ack = self.packet_buffer.get_packet_from_buffer()
+                if ack:
+                    if ack.command == Commands.DL_SEND_FILE:
+                        # process SendFile data
+                        sf: PacketDyscomSendFile = ack
+                        blocks.append(sf.data)
 
-                    # check if we have all blocks
-                    if sf.block_number >= file_by_name.number_of_blocks:
-                        break
-                else:
-                    logger().warning("Unexpected command: %d", ack.command)
+                        # send acknowledge for this packet, so device can send
+                        # next block automatically
+                        self.send_send_file_ack(sf.block_number)
 
-            await asyncio.sleep(0.01)
+                        # check if we have all blocks
+                        if sf.block_number >= file_by_name.number_of_blocks:
+                            break
+                    else:
+                        logger().warning("Unexpected command: %d", ack.command)
+
+                await asyncio.sleep(0.01)
 
         # stop measurement, we have all blocks
         await self.stop()
