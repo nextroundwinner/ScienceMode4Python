@@ -35,7 +35,7 @@ class SerialPortConnection(Connection):
         return filtered_ports
 
 
-    def __init__(self, port: str, read_timeout_ins_s: float = 0, write_timeout_ins_s: float = 1, 
+    def __init__(self, port: str, read_timeout_ins_s: float = 0, write_timeout_ins_s: float = 1,
                  error_timeout_in_s: float = 3, max_port_reopen_attempts: int = 3):
         self._ser = serial.Serial(timeout = read_timeout_ins_s, write_timeout=write_timeout_ins_s)
         self._ser.port = port

@@ -9,6 +9,8 @@ max-branches=15
 [DESIGN]
 max-statements=100
 max-locals = 20
+max-args = 6
+max-positional-arguments = 6
 
 [STRING]
 check-quote-consistency=yes
