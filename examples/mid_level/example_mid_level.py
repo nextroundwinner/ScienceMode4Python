@@ -73,6 +73,9 @@ async def main() -> int:
         # call stop mid level
         await mid_level.stop()
     finally:
+        # request the keyboard thread to stop even on an exception above, so it
+        # doesn't keep waiting for input that no longer matters
+        keyboard_input_thread.stop()
         # always close the serial port connection, even if an exception occurred above,
         # otherwise the COM port stays locked for subsequent runs
         if connection is not None:

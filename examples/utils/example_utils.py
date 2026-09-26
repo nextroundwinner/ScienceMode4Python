@@ -15,14 +15,27 @@ class KeyboardInputThread(threading.Thread):
 
     def __init__(self, input_cbk: Callable[[str], bool]):
         self._input_cbk = input_cbk
+        self._stop_requested = threading.Event()
         super().__init__(name = "keyboard_input_thread", daemon = True)
         self.start()
 
 
+    def stop(self):
+        """Requests the thread to end, e.g. after an exception elsewhere so it doesn't
+        keep waiting for keyboard input that no longer matters.
+        Note: getch() blocks until a key is pressed, so this can only take effect on
+        the next keypress, not interrupt an already-blocked call. The thread is a
+        daemon thread regardless, so it never prevents the process itself from exiting."""
+        self._stop_requested.set()
+
+
     def run(self):
-        while True:
+        while not self._stop_requested.is_set():
             # getch() returns a bytes object
             key_raw = getch()
+            if self._stop_requested.is_set():
+                break
+
             if os.name == "nt":
                 key = bytes.decode(key_raw)
             else:
