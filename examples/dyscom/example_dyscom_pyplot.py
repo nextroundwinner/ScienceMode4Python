@@ -25,6 +25,10 @@ async def main() -> int:
     com_port = ExampleUtils.get_comport_from_commandline_argument()
 
     connection = None
+    dyscom = None
+    # tracks whether the measurement power module was actually switched on, so it is only
+    # switched off in finally if it was really turned on
+    measurement_power_on = False
     try: # pylint:disable=too-many-nested-blocks
         # create serial port connection
         connection = SerialPortConnection(com_port)
@@ -42,6 +46,7 @@ async def main() -> int:
 
         # call enable measurement power module for measurement
         await dyscom.power_module(DyscomPowerModuleType.MEASUREMENT, DyscomPowerModulePowerType.SWITCH_ON)
+        measurement_power_on = True
         # call init with lowest sample rate (because of performance issues with plotting values)
         init_params = DyscomInitParams()
         init_params.signal_type = [DyscomSignalType.BI]
@@ -88,9 +93,14 @@ async def main() -> int:
 
         # stop measurement
         await dyscom.stop()
-        # turn power module off
-        await dyscom.power_module(DyscomPowerModuleType.MEASUREMENT, DyscomPowerModulePowerType.SWITCH_OFF)
     finally:
+        # always try to turn the measurement power module back off, even if an exception
+        # occurred above, otherwise it stays switched on
+        if measurement_power_on:
+            try:
+                await dyscom.power_module(DyscomPowerModuleType.MEASUREMENT, DyscomPowerModulePowerType.SWITCH_OFF)
+            except Exception as e: # pylint:disable=broad-exception-caught
+                print(e)
         # always close the serial port connection, even if an exception occurred above,
         # otherwise the COM port stays locked for subsequent runs
         if connection is not None:

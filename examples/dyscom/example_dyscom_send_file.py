@@ -16,6 +16,11 @@ async def main() -> int:
     com_port = ExampleUtils.get_comport_from_commandline_argument()
 
     connection = None
+    dyscom = None
+    # tracks which power modules were actually switched on, so only those are switched
+    # off again in finally if they were really turned on
+    measurement_power_on = False
+    memory_card_power_on = False
     try:
         # create serial port connection
         connection = SerialPortConnection(com_port)
@@ -33,7 +38,9 @@ async def main() -> int:
 
         # call enable measurement power module and memory card for measurement
         await dyscom.power_module(DyscomPowerModuleType.MEASUREMENT, DyscomPowerModulePowerType.SWITCH_ON)
+        measurement_power_on = True
         await dyscom.power_module(DyscomPowerModuleType.MEMORY_CARD, DyscomPowerModulePowerType.SWITCH_ON)
+        memory_card_power_on = True
         # call init with 1k sample rate
         init_params = DyscomInitParams()
         init_params.signal_type = [DyscomSignalType.BI, DyscomSignalType.EMG_1]
@@ -50,18 +57,25 @@ async def main() -> int:
 
         # stop measurement
         await dyscom.stop()
-        # turn power module off
-        await dyscom.power_module(DyscomPowerModuleType.MEASUREMENT, DyscomPowerModulePowerType.SWITCH_OFF)
 
         # get all meas data
         measurement = await dyscom.get_meas_file_content(init_result.measurement_file_id)
         print(f"Sample rate: {measurement[0].name}")
         for key, value in measurement[1].items():
             print(f"Signal type: {key.name}, sample count: {len(value)}")
-
-        # turn memory card off
-        await dyscom.power_module(DyscomPowerModuleType.MEMORY_CARD, DyscomPowerModulePowerType.SWITCH_OFF)
     finally:
+        # always try to turn the power modules back off, even if an exception occurred
+        # above, otherwise they stay switched on
+        if measurement_power_on:
+            try:
+                await dyscom.power_module(DyscomPowerModuleType.MEASUREMENT, DyscomPowerModulePowerType.SWITCH_OFF)
+            except Exception as e: # pylint:disable=broad-exception-caught
+                print(e)
+        if memory_card_power_on:
+            try:
+                await dyscom.power_module(DyscomPowerModuleType.MEMORY_CARD, DyscomPowerModulePowerType.SWITCH_OFF)
+            except Exception as e: # pylint:disable=broad-exception-caught
+                print(e)
         # always close the serial port connection, even if an exception occurred above,
         # otherwise the COM port stays locked for subsequent runs
         if connection is not None:

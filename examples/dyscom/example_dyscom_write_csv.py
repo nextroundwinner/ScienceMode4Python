@@ -43,6 +43,10 @@ def main():
         com_port = ExampleUtils.get_comport_from_commandline_argument()
 
         connection = None
+        dyscom = None
+        # tracks whether the measurement power module was actually switched on, so it is only
+        # switched off in finally if it was really turned on
+        measurement_power_on = False
         try:
             # create serial port connection
             connection = SerialPortConnection(com_port)
@@ -60,6 +64,7 @@ def main():
 
             # call enable measurement power module for measurement
             await dyscom.power_module(DyscomPowerModuleType.MEASUREMENT, DyscomPowerModulePowerType.SWITCH_ON)
+            measurement_power_on = True
             # call init with 4k sample rate and enable signal types
             init_params = DyscomInitParams()
             init_params.signal_type = signal_types
@@ -120,10 +125,14 @@ def main():
             print(f"Samples: {total_count}, duration: {end_time - start_time}, sample rate: {total_count / (end_time - start_time)}")
 
             await asyncio.sleep(1)
-
-            # turn power module off
-            await dyscom.power_module(DyscomPowerModuleType.MEASUREMENT, DyscomPowerModulePowerType.SWITCH_OFF)
         finally:
+            # always try to turn the measurement power module back off, even if an exception
+            # occurred above, otherwise it stays switched on
+            if measurement_power_on:
+                try:
+                    await dyscom.power_module(DyscomPowerModuleType.MEASUREMENT, DyscomPowerModulePowerType.SWITCH_OFF)
+                except Exception as e: # pylint:disable=broad-exception-caught
+                    print(e)
             # always close the serial port connection, even if an exception occurred above,
             # otherwise the COM port stays locked for subsequent runs
             if connection is not None:
