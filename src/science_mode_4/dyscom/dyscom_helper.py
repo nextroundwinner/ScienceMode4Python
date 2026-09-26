@@ -43,6 +43,9 @@ class DyscomHelper:
     @staticmethod
     def str_to_bytes(value: str, byte_count: int) -> bytes:
         """Converts value to bytes with byte_count bytes, last byte will always be 0"""
+        if len(value) > byte_count - 1:
+            raise ValueError(f"Value '{value}' is too long, maximum length is {byte_count - 1} characters")
+
         temp = bytearray(byte_count)
         for x in range(byte_count):
             if x < len(value):
