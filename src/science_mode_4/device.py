@@ -54,7 +54,7 @@ class Device():
     @property
     def packet_number_generator(self) -> PacketNumberGenerator:
         """Getter for packet number generator"""
-        return self._capabilities
+        return self.packet_number_generator
 
 
     @property
