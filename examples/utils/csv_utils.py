@@ -17,6 +17,7 @@ class CsvHelper:
         # this queue is used to synchronize data between background and main thread
         self._data_queue = Queue(maxsize=0)
         self._is_running = False
+        self._thread: threading.Thread | None = None
 
 
     def start(self):
@@ -25,13 +26,16 @@ class CsvHelper:
         self._is_running = True
 
         # Create and start the data generator thread (aka background thread)
-        data_thread = threading.Thread(target=self._background_task, daemon=True)
-        data_thread.start()
+        self._thread = threading.Thread(target=self._background_task, daemon=True)
+        self._thread.start()
 
 
     def stop(self):
-        """Stop background thread"""
+        """Stop background thread and wait for it to finish writing all queued values
+        and close the file, so the csv file is complete once this call returns"""
         self._is_running = False
+        if self._thread is not None:
+            self._thread.join()
 
 
     def append_values(self, package_nr: int, values: list[float], time_delta: int):
@@ -57,3 +61,12 @@ class CsvHelper:
                 except Empty:
                     # No new data in the queue
                     pass
+
+            # flush values that were queued right before stop() was called, otherwise
+            # they would be silently lost when the file is closed below
+            while True:
+                try:
+                    data = self._data_queue.get_nowait()
+                    csv_writer.writerow(data)
+                except Empty:
+                    break
