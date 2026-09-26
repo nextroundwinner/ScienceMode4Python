@@ -1,6 +1,6 @@
 """Provides class for ADS129x chip"""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from science_mode_4.utils.byte_builder import ByteBuilder
 from .ads129x_config_register_1 import Ads129xConfigRegister1
@@ -12,39 +12,39 @@ from .ads129x_channel_settings_register import Ads129xChannelSettingsRegister
 
 
 @dataclass
-class Ads129x:
-    """Describes register map of ADS129x chip"""
+class Ads129x: # pylint:disable=too-many-instance-attributes
+    """Describes register map of ADS129x chip, one field per physical chip register"""
 
     # control register
-    device_id = 0
+    device_id: int = 0
 
-    config_register_1 = Ads129xConfigRegister1() # CONFIG1
-    config_register_2 = Ads129xConfigRegister2() # CONFIG2
-    config_register_3 = Ads129xConfigRegister3() # CONFIG3
-    config_register_4 = Ads129xConfigRegister4() # CONFIG4
+    config_register_1: Ads129xConfigRegister1 = field(default_factory=Ads129xConfigRegister1) # CONFIG1
+    config_register_2: Ads129xConfigRegister2 = field(default_factory=Ads129xConfigRegister2) # CONFIG2
+    config_register_3: Ads129xConfigRegister3 = field(default_factory=Ads129xConfigRegister3) # CONFIG3
+    config_register_4: Ads129xConfigRegister4 = field(default_factory=Ads129xConfigRegister4) # CONFIG4
 
-    lead_off_control_register = 0 # LOFF
+    lead_off_control_register: int = 0 # LOFF
 
-    channel_1_setting_register = Ads129xChannelSettingsRegister() # CH1SET
-    channel_2_setting_register = Ads129xChannelSettingsRegister() # CH2SET
-    channel_3_setting_register = Ads129xChannelSettingsRegister() # CH3SET
-    channel_4_setting_register = Ads129xChannelSettingsRegister() # CH4SET
+    channel_1_setting_register: Ads129xChannelSettingsRegister = field(default_factory=Ads129xChannelSettingsRegister) # CH1SET
+    channel_2_setting_register: Ads129xChannelSettingsRegister = field(default_factory=Ads129xChannelSettingsRegister) # CH2SET
+    channel_3_setting_register: Ads129xChannelSettingsRegister = field(default_factory=Ads129xChannelSettingsRegister) # CH3SET
+    channel_4_setting_register: Ads129xChannelSettingsRegister = field(default_factory=Ads129xChannelSettingsRegister) # CH4SET
 
-    positive_signal_derivation_register = 0x02 # RLD_SENSP
-    negative_signal_derivation_register = 0x02 # RLD_SENSN
-    positive_signal_lead_off_detection_register = 0 # LOFF_SENSP
-    negative_signal_lead_off_detection_register = 0 # LOFF_SENSN
+    positive_signal_derivation_register: int = 0x02 # RLD_SENSP
+    negative_signal_derivation_register: int = 0x02 # RLD_SENSN
+    positive_signal_lead_off_detection_register: int = 0 # LOFF_SENSP
+    negative_signal_lead_off_detection_register: int = 0 # LOFF_SENSN
 
-    lead_off_flip_register = 0 # LOFF_FLIP
-    lead_off_positive_signal_status_register = 0 # LOFF_STATP
-    lead_off_negative_signal_status_register = 0 # LOFF_STATN
-    gpio_register = 0 # GPIO
-    pace_detect_register = 0 # PACE
+    lead_off_flip_register: int = 0 # LOFF_FLIP
+    lead_off_positive_signal_status_register: int = 0 # LOFF_STATP
+    lead_off_negative_signal_status_register: int = 0 # LOFF_STATN
+    gpio_register: int = 0 # GPIO
+    pace_detect_register: int = 0 # PACE
 
-    respiration_control_register = Ads129xRespirationControlRegister() # RESP
+    respiration_control_register: Ads129xRespirationControlRegister = field(default_factory=Ads129xRespirationControlRegister) # RESP
 
-    wilson_central_terminal_and_augmented_lead_control_register = 0 # WCT1
-    wilson_central_terminal_control_register = 0 # WCT2
+    wilson_central_terminal_and_augmented_lead_control_register: int = 0 # WCT1
+    wilson_central_terminal_control_register: int = 0 # WCT2
 
 
 

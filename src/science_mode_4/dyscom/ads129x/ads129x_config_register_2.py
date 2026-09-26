@@ -33,10 +33,10 @@ class Ads129xTestSignalFrequency(IntEnum):
 class Ads129xConfigRegister2:
     """Describes config register 2 of ADS129x chip"""
 
-    wct_chopping_scheme = Ads129xWctChoppingScheme.CHOPPING_FREQUENCY_VARIES
-    test_signal_source = Ads129xTestSignalSource.EXTERNAL_TEST_SIGNAL
-    test_signal_amplitude = Ads129xTestSignalAmplitude.SINGLE_VREF
-    test_signal_frequency = Ads129xTestSignalFrequency.PULSE_AT_2_21
+    wct_chopping_scheme: Ads129xWctChoppingScheme = Ads129xWctChoppingScheme.CHOPPING_FREQUENCY_VARIES
+    test_signal_source: Ads129xTestSignalSource = Ads129xTestSignalSource.EXTERNAL_TEST_SIGNAL
+    test_signal_amplitude: Ads129xTestSignalAmplitude = Ads129xTestSignalAmplitude.SINGLE_VREF
+    test_signal_frequency: Ads129xTestSignalFrequency = Ads129xTestSignalFrequency.PULSE_AT_2_21
 
 
     def set_data(self, data: bytes):

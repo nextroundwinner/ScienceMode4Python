@@ -38,16 +38,19 @@ class Ads129xLeadOffComparatorPowerDown(IntEnum):
 class Ads129xConfigRegister4:
     """Describes config register 4 of ADS129x chip"""
 
-    respiration_modulation_frequency = Ads129xRespirationModulationFrequency.MODULATION_CLOCK_64KHZ
-    single_shot_conversion = Ads129xSingleShotConversion.CONTINUOUS_MODE
-    wct_to_rld = Ads129xWctToRld.CONNECTION_OFF
-    lead_off_comparator_power_down = Ads129xLeadOffComparatorPowerDown.LEAD_OFF_COMPARATOR_DISABLED
+    respiration_modulation_frequency: Ads129xRespirationModulationFrequency = \
+        Ads129xRespirationModulationFrequency.MODULATION_CLOCK_64KHZ
+    single_shot_conversion: Ads129xSingleShotConversion = Ads129xSingleShotConversion.CONTINUOUS_MODE
+    wct_to_rld: Ads129xWctToRld = Ads129xWctToRld.CONNECTION_OFF
+    lead_off_comparator_power_down: Ads129xLeadOffComparatorPowerDown = \
+        Ads129xLeadOffComparatorPowerDown.LEAD_OFF_COMPARATOR_DISABLED
 
 
     def set_data(self, data: bytes):
         """Convert data to information"""
         tmp = data[0]
-        self.respiration_modulation_frequency = Ads129xRespirationModulationFrequency((tmp >> 5) & 0x08)
+        # CONFIG4 (datasheet Table 33): RESP_FREQ[2:0] is a 3 bit field at bits 7:5
+        self.respiration_modulation_frequency = Ads129xRespirationModulationFrequency((tmp >> 5) & 0x07)
         self.single_shot_conversion = Ads129xSingleShotConversion((tmp >> 3) & 0x01)
         self.wct_to_rld = Ads129xWctToRld((tmp >> 2) & 0x01)
         self.lead_off_comparator_power_down = Ads129xLeadOffComparatorPowerDown((tmp >> 1) & 0x01)

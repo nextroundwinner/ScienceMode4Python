@@ -50,13 +50,13 @@ class Ads129xRldLeadOffStatus(IntEnum):
 class Ads129xConfigRegister3:
     """Describes config register 3 of ADS129x chip"""
 
-    power_down_reference_buffer = Ads129xPowerDownReferenceBuffer.ENABLE_INTERNAL_REFERENCE_BUFFER
-    reference_voltage = Ads129xReferenceVoltage.VREF_4_0
-    rld_measurement = Ads129xRldMeasurement.ROUTED
-    rld_reference_signal = Ads129xRldReferenceSignal.GENERATED_INTERNALLY
-    rld_buffer_power = Ads129xRldBufferPower.BUFFER_ENABLED
-    rld_sense_function = Ads129xRldSenseFunction.SENSE_DISABLED
-    rld_lead_off_status = Ads129xRldLeadOffStatus.CONNECTED
+    power_down_reference_buffer: Ads129xPowerDownReferenceBuffer = Ads129xPowerDownReferenceBuffer.ENABLE_INTERNAL_REFERENCE_BUFFER
+    reference_voltage: Ads129xReferenceVoltage = Ads129xReferenceVoltage.VREF_4_0
+    rld_measurement: Ads129xRldMeasurement = Ads129xRldMeasurement.ROUTED
+    rld_reference_signal: Ads129xRldReferenceSignal = Ads129xRldReferenceSignal.GENERATED_INTERNALLY
+    rld_buffer_power: Ads129xRldBufferPower = Ads129xRldBufferPower.BUFFER_ENABLED
+    rld_sense_function: Ads129xRldSenseFunction = Ads129xRldSenseFunction.SENSE_DISABLED
+    rld_lead_off_status: Ads129xRldLeadOffStatus = Ads129xRldLeadOffStatus.CONNECTED
 
 
     def set_data(self, data: bytes):
@@ -65,8 +65,9 @@ class Ads129xConfigRegister3:
         self.power_down_reference_buffer = Ads129xPowerDownReferenceBuffer((tmp >> 7) & 0x01)
         self.reference_voltage = Ads129xReferenceVoltage((tmp >> 5) & 0x01)
         self.rld_measurement = Ads129xRldMeasurement((tmp >> 4) & 0x01)
-        self.rld_reference_signal = Ads129xRldReferenceSignal((tmp >> 4) & 0x01)
-        self.rld_buffer_power = Ads129xRldBufferPower((tmp >> 3) & 0x01)
+        # CONFIG3 (datasheet Table 20): bit3 = RLDREF_INT, bit2 = PD_RLD
+        self.rld_reference_signal = Ads129xRldReferenceSignal((tmp >> 3) & 0x01)
+        self.rld_buffer_power = Ads129xRldBufferPower((tmp >> 2) & 0x01)
         self.rld_sense_function = Ads129xRldSenseFunction((tmp >> 1) & 0x01)
         self.rld_lead_off_status = Ads129xRldLeadOffStatus((tmp >> 0) & 0x01)
 

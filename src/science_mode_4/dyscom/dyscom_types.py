@@ -152,16 +152,18 @@ class DyscomElectrodeSample:
 class DyscomInitParams():
     """Dyscom init packet parameters"""
 
-    register_map_ads129x = Ads129x()
-    start_time = datetime.datetime.now()
-    system_time = datetime.datetime.now()
-    proband_name = ""
-    investigator_name = ""
-    proband_number = ""
-    duration = datetime.timedelta()
+    register_map_ads129x: Ads129x = field(default_factory=Ads129x)
+    # default_factory (not a plain default) so each instance gets the time it was actually
+    # created, instead of the time this module happened to be first imported
+    start_time: datetime.datetime = field(default_factory=datetime.datetime.now)
+    system_time: datetime.datetime = field(default_factory=datetime.datetime.now)
+    proband_name: str = ""
+    investigator_name: str = ""
+    proband_number: str = ""
+    duration: datetime.timedelta = field(default_factory=datetime.timedelta)
     signal_type: list[DyscomSignalType] = field(default_factory=lambda: [DyscomSignalType.BI,  DyscomSignalType.EMG_1])
     sync_signal: bool = False
-    filter = DyscomFilterType.FILTER_OFF
+    filter: DyscomFilterType = DyscomFilterType.FILTER_OFF
     flags: set[DyscomInitFlag] = field(default_factory=lambda: {DyscomInitFlag.ENABLE_LIVE_DATA_MODE})
 
 

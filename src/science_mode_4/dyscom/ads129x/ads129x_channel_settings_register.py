@@ -37,9 +37,9 @@ class Ads129xChannelInput(IntEnum):
 class Ads129xChannelSettingsRegister:
     """Describes a channel settings register of ADS129x chip"""
 
-    power_mode = Ads129xChannelPowerMode.NORMAL_OPERATION
-    gain = Ads129xChannelGain.GAIN_6
-    input = Ads129xChannelInput.NORMAL_ELECTRODE_INPUT
+    power_mode: Ads129xChannelPowerMode = Ads129xChannelPowerMode.NORMAL_OPERATION
+    gain: Ads129xChannelGain = Ads129xChannelGain.GAIN_6
+    input: Ads129xChannelInput = Ads129xChannelInput.NORMAL_ELECTRODE_INPUT
 
     def set_data(self, data: bytes):
         """Convert data to information"""

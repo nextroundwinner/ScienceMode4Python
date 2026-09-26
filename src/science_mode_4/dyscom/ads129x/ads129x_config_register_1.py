@@ -37,10 +37,10 @@ class Ads129xOutputDataRate(IntEnum):
 class Ads129xConfigRegister1:
     """Describes config register 1 of ADS129x chip"""
 
-    power_mode = Ads129xPowerMode.HIGH_RESOLUTION
-    read_mode = Ads129xReadMode.DAISY_CHAIN
-    clock_connection = Ads129xClockConnection.OSCILLATOR_CLOCK_OUTPUT_DISABLED
-    output_data_rate = Ads129xOutputDataRate.HR_MODE_4_KSPS__LP_MODE_2_KSPS
+    power_mode: Ads129xPowerMode = Ads129xPowerMode.HIGH_RESOLUTION
+    read_mode: Ads129xReadMode = Ads129xReadMode.DAISY_CHAIN
+    clock_connection: Ads129xClockConnection = Ads129xClockConnection.OSCILLATOR_CLOCK_OUTPUT_DISABLED
+    output_data_rate: Ads129xOutputDataRate = Ads129xOutputDataRate.HR_MODE_4_KSPS__LP_MODE_2_KSPS
 
     def set_data(self, data: bytes):
         """Convert data to information"""

@@ -39,10 +39,12 @@ class Ads129xRespirationControl(IntEnum):
 class Ads129xRespirationControlRegister:
     """Describes respiration control register of ADS129x chip"""
 
-    respiration_demodulation_circuitry = Ads129xRespirationDemodulationCircuitry.DEMODULATION_CIRCUITRY_ON
-    respiration_modulation_circuitry = Ads129xRespirationModulationCircuitry.MODULATION_CIRCUITRY_ON
-    respiration_phase = Ads129xRespirationPhase.PHASE_67_5
-    respiration_control = Ads129xRespirationControl.INTERNAL_RESPIRATION_WITH_INTERNAL_SIGNAL
+    respiration_demodulation_circuitry: Ads129xRespirationDemodulationCircuitry = \
+        Ads129xRespirationDemodulationCircuitry.DEMODULATION_CIRCUITRY_ON
+    respiration_modulation_circuitry: Ads129xRespirationModulationCircuitry = \
+        Ads129xRespirationModulationCircuitry.MODULATION_CIRCUITRY_ON
+    respiration_phase: Ads129xRespirationPhase = Ads129xRespirationPhase.PHASE_67_5
+    respiration_control: Ads129xRespirationControl = Ads129xRespirationControl.INTERNAL_RESPIRATION_WITH_INTERNAL_SIGNAL
 
 
     def set_data(self, data: bytes):
