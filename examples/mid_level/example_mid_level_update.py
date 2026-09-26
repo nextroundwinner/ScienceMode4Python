@@ -101,6 +101,7 @@ class ExampleMidLevelUpdate():
         # create keyboard input thread for non blocking console input
         keyboard_input_thread = KeyboardInputThread(input_callback)
 
+        connection = None
         try:
             # get comport from command line argument
             com_port = ExampleUtils.get_comport_from_commandline_argument()
@@ -135,11 +136,13 @@ class ExampleMidLevelUpdate():
 
             # call stop mid level
             await mid_level.stop()
-
-            # close serial port connection
-            connection.close()
         except Exception as e: # pylint:disable=broad-exception-caught
             print(e)
+        finally:
+            # always close the serial port connection, even if an exception occurred above,
+            # otherwise the COM port stays locked for subsequent runs
+            if connection is not None:
+                connection.close()
 
         return 0
 

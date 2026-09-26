@@ -63,42 +63,48 @@ async def main() -> int:
 
     # get comport from command line argument
     com_port = ExampleUtils.get_comport_from_commandline_argument()
-    # create serial port connection
-    connection = SerialPortConnection(com_port)
-    # open connection, now we can read and write data
-    connection.open()
 
-    # create science mode device
-    device = DeviceP24(connection)
-    # call initialize to get basic information (serial, versions) and stop any active stimulation/measurement
-    # to have a defined state
-    await device.initialize()
+    connection = None
+    try:
+        # create serial port connection
+        connection = SerialPortConnection(com_port)
+        # open connection, now we can read and write data
+        connection.open()
 
-    # get low level layer to call low level commands
-    low_level_layer = device.get_layer_low_level()
+        # create science mode device
+        device = DeviceP24(connection)
+        # call initialize to get basic information (serial, versions) and stop any active stimulation/measurement
+        # to have a defined state
+        await device.initialize()
 
-    # call init low level
-    await low_level_layer.init(LowLevelMode.NO_MEASUREMENT, LowLevelHighVoltageSource.STANDARD)
+        # get low level layer to call low level commands
+        low_level_layer = device.get_layer_low_level()
 
-    # now we can start stimulation
-    while keyboard_input_thread.is_alive():
-        # get new packets from connection
-        ack = low_level_layer.packet_buffer.get_packet_from_buffer()
-        if ack and ack.command == Commands.LOW_LEVEL_CHANNEL_CONFIG_ACK:
-            cca: PacketLowLevelChannelConfigAck = ack
-            # do something with packet ack
-            # here we print that an acknowledge arrived
-            print(f"Connector: {cca.connector}, channel: {cca.channel}, result: {cca.result.name}")
+        # call init low level
+        await low_level_layer.init(LowLevelMode.NO_MEASUREMENT, LowLevelHighVoltageSource.STANDARD)
 
-        await asyncio.sleep(0.1)
+        # now we can start stimulation
+        while keyboard_input_thread.is_alive():
+            # get new packets from connection
+            ack = low_level_layer.packet_buffer.get_packet_from_buffer()
+            if ack and ack.command == Commands.LOW_LEVEL_CHANNEL_CONFIG_ACK:
+                cca: PacketLowLevelChannelConfigAck = ack
+                # do something with packet ack
+                # here we print that an acknowledge arrived
+                print(f"Connector: {cca.connector}, channel: {cca.channel}, result: {cca.result.name}")
 
-    # wait until all acknowledges are received
-    await asyncio.sleep(0.5)
-    # call stop low level
-    await low_level_layer.stop()
+            await asyncio.sleep(0.1)
 
-    # close serial port connection
-    connection.close()
+        # wait until all acknowledges are received
+        await asyncio.sleep(0.5)
+        # call stop low level
+        await low_level_layer.stop()
+    finally:
+        # always close the serial port connection, even if an exception occurred above,
+        # otherwise the COM port stays locked for subsequent runs
+        if connection is not None:
+            connection.close()
+
     return 0
 
 

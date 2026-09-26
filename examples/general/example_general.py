@@ -12,25 +12,31 @@ async def main() -> int:
 
     # get comport from command line argument
     com_port = ExampleUtils.get_comport_from_commandline_argument()
-    # create serial port connection
-    connection = SerialPortConnection(com_port)
-    # open connection, now we can read and write data
-    connection.open()
 
-    # create science mode device
-    device = DeviceP24(connection)
-    # call initialize to get basic information (serial, versions) and stop any active stimulation/measurement
-    # to have a defined state
-    await device.initialize()
+    connection = None
+    try:
+        # create serial port connection
+        connection = SerialPortConnection(com_port)
+        # open connection, now we can read and write data
+        connection.open()
 
-    # get general layer to call general commands
-    general = device.get_layer_general()
-    print(f"Device id: {general.device_id}")
-    print(f"Firmware version: {general.firmware_version}")
-    print(f"Science mode version: {general.science_mode_version}")
+        # create science mode device
+        device = DeviceP24(connection)
+        # call initialize to get basic information (serial, versions) and stop any active stimulation/measurement
+        # to have a defined state
+        await device.initialize()
 
-    # close serial port connection
-    connection.close()
+        # get general layer to call general commands
+        general = device.get_layer_general()
+        print(f"Device id: {general.device_id}")
+        print(f"Firmware version: {general.firmware_version}")
+        print(f"Science mode version: {general.science_mode_version}")
+    finally:
+        # always close the serial port connection, even if an exception occurred above,
+        # otherwise the COM port stays locked for subsequent runs
+        if connection is not None:
+            connection.close()
+
     return 0
 
 

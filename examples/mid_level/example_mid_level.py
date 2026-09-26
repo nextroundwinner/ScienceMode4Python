@@ -31,47 +31,53 @@ async def main() -> int:
 
     # get comport from command line argument
     com_port = ExampleUtils.get_comport_from_commandline_argument()
-    # create serial port connection
-    connection = SerialPortConnection(com_port)
-    # open connection, now we can read and write data
-    connection.open()
 
-    # create science mode device
-    device = DeviceP24(connection)
-    # call initialize to get basic information (serial, versions) and stop any active stimulation/measurement
-    # to have a defined state
-    await device.initialize()
+    connection = None
+    try:
+        # create serial port connection
+        connection = SerialPortConnection(com_port)
+        # open connection, now we can read and write data
+        connection.open()
 
-    # simple stimulation pattern
-    c1p1: ChannelPoint = ChannelPoint(200, 20)
-    c1p2: ChannelPoint = ChannelPoint(100, 0)
-    c1p3: ChannelPoint = ChannelPoint(200, -20)
-    cc1 = MidLevelChannelConfiguration(True, 3, 20, [c1p1, c1p2, c1p3])
+        # create science mode device
+        device = DeviceP24(connection)
+        # call initialize to get basic information (serial, versions) and stop any active stimulation/measurement
+        # to have a defined state
+        await device.initialize()
 
-    c2p1: ChannelPoint = ChannelPoint(100, 10)
-    c2p2: ChannelPoint = ChannelPoint(100, 0)
-    c2p3: ChannelPoint = ChannelPoint(100, -10)
-    cc2 = MidLevelChannelConfiguration(True, 3, 10, [c2p1, c2p2, c2p3])
+        # simple stimulation pattern
+        c1p1: ChannelPoint = ChannelPoint(200, 20)
+        c1p2: ChannelPoint = ChannelPoint(100, 0)
+        c1p3: ChannelPoint = ChannelPoint(200, -20)
+        cc1 = MidLevelChannelConfiguration(True, 3, 20, [c1p1, c1p2, c1p3])
 
-    # get mid level layer to call mid level commands
-    mid_level = device.get_layer_mid_level()
-    # call init mid level, we want to stop on all stimulation errors
-    await mid_level.init(True)
-    # set stimulation pattern, P24 device will now stimulate according this pattern
-    await mid_level.update([cc1, cc2])
+        c2p1: ChannelPoint = ChannelPoint(100, 10)
+        c2p2: ChannelPoint = ChannelPoint(100, 0)
+        c2p3: ChannelPoint = ChannelPoint(100, -10)
+        cc2 = MidLevelChannelConfiguration(True, 3, 10, [c2p1, c2p2, c2p3])
 
-    while keyboard_input_thread.is_alive():
-        # we have to call get_current_data() every 1.5s to keep stimulation ongoing
-        update = await mid_level.get_current_data() # pylint:disable=unused-variable
-        # print(update)
+        # get mid level layer to call mid level commands
+        mid_level = device.get_layer_mid_level()
+        # call init mid level, we want to stop on all stimulation errors
+        await mid_level.init(True)
+        # set stimulation pattern, P24 device will now stimulate according this pattern
+        await mid_level.update([cc1, cc2])
 
-        await asyncio.sleep(1)
+        while keyboard_input_thread.is_alive():
+            # we have to call get_current_data() every 1.5s to keep stimulation ongoing
+            update = await mid_level.get_current_data() # pylint:disable=unused-variable
+            # print(update)
 
-    # call stop mid level
-    await mid_level.stop()
+            await asyncio.sleep(1)
 
-    # close serial port connection
-    connection.close()
+        # call stop mid level
+        await mid_level.stop()
+    finally:
+        # always close the serial port connection, even if an exception occurred above,
+        # otherwise the COM port stays locked for subsequent runs
+        if connection is not None:
+            connection.close()
+
     return 0
 
 

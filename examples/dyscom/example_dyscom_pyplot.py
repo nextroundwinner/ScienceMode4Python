@@ -23,71 +23,76 @@ async def main() -> int:
 
     # get comport from command line argument
     com_port = ExampleUtils.get_comport_from_commandline_argument()
-    # create serial port connection
-    connection = SerialPortConnection(com_port)
-    # open connection, now we can read and write data
-    connection.open()
 
-    # create science mode device
-    device = DeviceI24(connection)
-    # call initialize to get basic information (serial, versions) and stop any active stimulation/measurement
-    # to have a defined state
-    await device.initialize()
+    connection = None
+    try: # pylint:disable=too-many-nested-blocks
+        # create serial port connection
+        connection = SerialPortConnection(com_port)
+        # open connection, now we can read and write data
+        connection.open()
 
-    # get dyscom layer to call low level commands
-    dyscom = device.get_layer_dyscom()
+        # create science mode device
+        device = DeviceI24(connection)
+        # call initialize to get basic information (serial, versions) and stop any active stimulation/measurement
+        # to have a defined state
+        await device.initialize()
 
-    # call enable measurement power module for measurement
-    await dyscom.power_module(DyscomPowerModuleType.MEASUREMENT, DyscomPowerModulePowerType.SWITCH_ON)
-    # call init with lowest sample rate (because of performance issues with plotting values)
-    init_params = DyscomInitParams()
-    init_params.signal_type = [DyscomSignalType.BI]
-    init_params.register_map_ads129x.config_register_1.output_data_rate = Ads129xOutputDataRate.HR_MODE_500_SPS__LP_MODE_250_SPS
-    init_params.register_map_ads129x.config_register_1.power_mode = Ads129xPowerMode.LOW_POWER
-    await dyscom.init(init_params)
+        # get dyscom layer to call low level commands
+        dyscom = device.get_layer_dyscom()
 
-    # start dyscom measurement
-    await dyscom.start()
+        # call enable measurement power module for measurement
+        await dyscom.power_module(DyscomPowerModuleType.MEASUREMENT, DyscomPowerModulePowerType.SWITCH_ON)
+        # call init with lowest sample rate (because of performance issues with plotting values)
+        init_params = DyscomInitParams()
+        init_params.signal_type = [DyscomSignalType.BI]
+        init_params.register_map_ads129x.config_register_1.output_data_rate = Ads129xOutputDataRate.HR_MODE_500_SPS__LP_MODE_250_SPS
+        init_params.register_map_ads129x.config_register_1.power_mode = Ads129xPowerMode.LOW_POWER
+        await dyscom.init(init_params)
 
-    # loop for some time
-    for x in range(5000):
-        # check operation mode from time to time
-        if x % 500 == 0:
-            dyscom.send_get_operation_mode()
+        # start dyscom measurement
+        await dyscom.start()
 
-        live_data_counter = 0
-        while True:
-            ack = dyscom.packet_buffer.get_packet_from_buffer(live_data_counter == 0)
-            if ack:
-                if ack.command == Commands.DL_GET_ACK:
-                    om_ack: PacketDyscomGetAckOperationMode = ack
-                    print(f"Operation mode {om_ack.operation_mode.name}")
-                elif ack.command == Commands.DL_SEND_LIVE_DATA:
-                    live_data_counter += 1
+        # loop for some time
+        for x in range(5000):
+            # check operation mode from time to time
+            if x % 500 == 0:
+                dyscom.send_get_operation_mode()
 
-                    sld: PacketDyscomSendLiveData = ack
-                    if sld.status_error:
-                        print(f"SendLiveData status error {sld.samples}")
-                        break
+            live_data_counter = 0
+            while True:
+                ack = dyscom.packet_buffer.get_packet_from_buffer(live_data_counter == 0)
+                if ack:
+                    if ack.command == Commands.DL_GET_ACK:
+                        om_ack: PacketDyscomGetAckOperationMode = ack
+                        print(f"Operation mode {om_ack.operation_mode.name}")
+                    elif ack.command == Commands.DL_SEND_LIVE_DATA:
+                        live_data_counter += 1
 
-                    # reduce framerate further
-                    if sld.number % 60 == 0:
-                        plot_helper.append_value(0, sld.samples[0].value)
-                        plot_helper.update()
+                        sld: PacketDyscomSendLiveData = ack
+                        if sld.status_error:
+                            print(f"SendLiveData status error {sld.samples}")
+                            break
 
-            else:
-                # print(f"Live data acknowledges per iteration {live_data_counter}")
-                break
+                        # reduce framerate further
+                        if sld.number % 60 == 0:
+                            plot_helper.append_value(0, sld.samples[0].value)
+                            plot_helper.update()
 
-        await asyncio.sleep(0.001)
+                else:
+                    # print(f"Live data acknowledges per iteration {live_data_counter}")
+                    break
 
-    # stop measurement
-    await dyscom.stop()
-    # turn power module off
-    await dyscom.power_module(DyscomPowerModuleType.MEASUREMENT, DyscomPowerModulePowerType.SWITCH_OFF)
+            await asyncio.sleep(0.001)
 
-    # close serial port connection
-    connection.close()
+        # stop measurement
+        await dyscom.stop()
+        # turn power module off
+        await dyscom.power_module(DyscomPowerModuleType.MEASUREMENT, DyscomPowerModulePowerType.SWITCH_OFF)
+    finally:
+        # always close the serial port connection, even if an exception occurred above,
+        # otherwise the COM port stays locked for subsequent runs
+        if connection is not None:
+            connection.close()
 
     print("Close plot window to quit")
     plot_helper.loop()
