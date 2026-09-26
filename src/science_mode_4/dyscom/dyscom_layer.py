@@ -262,7 +262,7 @@ class LayerDyscom(Layer):
         # skip header
         pos = 512
         sample_size = unpack_struct.size
-        while pos + sample_size < len(meas_data):
+        while pos + sample_size <= len(meas_data):
             r = unpack_struct.unpack(meas_data[pos:pos+sample_size])
             for index, value in enumerate(signal_types):
                 result[value].append(r[1+index])
