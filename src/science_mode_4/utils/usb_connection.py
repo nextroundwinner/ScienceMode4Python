@@ -58,6 +58,11 @@ class UsbConnection(Connection):
 
 
     def close(self):
+        # release the claimed interface/endpoints, otherwise a later open() (in this
+        # process or another) can fail to claim the interface ("Resource busy")
+        usb.util.dispose_resources(self._device)
+        self._out_endpoint = None
+        self._in_endpoint = None
         self._is_open = False
 
 
