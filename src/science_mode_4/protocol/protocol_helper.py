@@ -41,22 +41,22 @@ class ProtocolHelper:
         while counter > 0:
             while True:
                 ack = packet_buffer.get_packet_from_buffer()
-                if ack:
-                    if (ack.command == packet.command + 1) and (ack.number == packet.number):
-                        return ack
+                if ack is None:
+                    # no acknowledge arrived, sleep and check again
+                    break
 
-                    # check if we got an error
-                    if ack.command == Commands.GENERAL_ERROR:
-                        ge: PacketGeneralError = ack
-                        raise ProtocolError(f"General error packet {ge.result_error.name}")
-                    if ack.command == Commands.UNKNOWN_COMMAND:
-                        uc: PacketGeneralUnknownCommand = ack
-                        raise ProtocolError(f"Unknown command packet {uc.result_error.name}")
+                if (ack.command == packet.command + 1) and (ack.number == packet.number):
+                    return ack
 
-                    # discard acknowledge and continue
+                # check if we got an error
+                if ack.command == Commands.GENERAL_ERROR:
+                    ge: PacketGeneralError = ack
+                    raise ProtocolError(f"General error packet {ge.result_error.name}")
+                if ack.command == Commands.UNKNOWN_COMMAND:
+                    uc: PacketGeneralUnknownCommand = ack
+                    raise ProtocolError(f"Unknown command packet {uc.result_error.name}")
 
-                # no acknowledge arrived, sleep and check again
-                break
+                # discard this stale/mismatched acknowledge and check the buffer again immediately
 
             await asyncio.sleep(sleep_duration)
             counter -= 1
