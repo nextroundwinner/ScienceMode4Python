@@ -66,6 +66,9 @@ async def main() -> int:
     # created only once low_level_layer is assigned below, because input_callback
     # references it and a key press before that would raise an exception
     keyboard_input_thread = None
+    # created only once assigned below, so stop() is only attempted in finally
+    # if stimulation was actually started
+    low_level_layer = None
     try:
         # create serial port connection
         connection = SerialPortConnection(com_port)
@@ -99,12 +102,16 @@ async def main() -> int:
                 print(f"Connector: {cca.connector}, channel: {cca.channel}, result: {cca.result.name}")
 
             await asyncio.sleep(0.1)
-
-        # wait until all acknowledges are received
-        await asyncio.sleep(0.5)
-        # call stop low level
-        await low_level_layer.stop()
     finally:
+        # always try to stop low level, even if an exception occurred in the loop above,
+        # otherwise the device only stops via its own stimulation keepalive timeout
+        if low_level_layer is not None:
+            try:
+                # wait until all acknowledges are received
+                await asyncio.sleep(0.5)
+                await low_level_layer.stop()
+            except Exception as e: # pylint:disable=broad-exception-caught
+                print(e)
         # request the keyboard thread to stop even on an exception above, so it
         # doesn't keep waiting for input that no longer matters
         if keyboard_input_thread is not None:

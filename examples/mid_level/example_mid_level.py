@@ -33,6 +33,9 @@ async def main() -> int:
     com_port = ExampleUtils.get_comport_from_commandline_argument()
 
     connection = None
+    # created only once assigned below, so stop() is only attempted in finally
+    # if stimulation was actually started
+    mid_level = None
     try:
         # create serial port connection
         connection = SerialPortConnection(com_port)
@@ -69,10 +72,14 @@ async def main() -> int:
             # print(update)
 
             await asyncio.sleep(1)
-
-        # call stop mid level
-        await mid_level.stop()
     finally:
+        # always try to stop mid level, even if an exception occurred in the loop above,
+        # otherwise the device only stops via its own stimulation keepalive timeout
+        if mid_level is not None:
+            try:
+                await mid_level.stop()
+            except Exception as e: # pylint:disable=broad-exception-caught
+                print(e)
         # request the keyboard thread to stop even on an exception above, so it
         # doesn't keep waiting for input that no longer matters
         keyboard_input_thread.stop()

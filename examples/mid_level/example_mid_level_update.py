@@ -102,6 +102,9 @@ class ExampleMidLevelUpdate():
         # created only once mid_level is assigned below, because input_callback
         # references it and a key press before that would raise an exception
         keyboard_input_thread = None
+        # created only once assigned below, so stop() is only attempted in finally
+        # if stimulation was actually started
+        mid_level = None
         try:
             # get comport from command line argument
             com_port = ExampleUtils.get_comport_from_commandline_argument()
@@ -137,12 +140,16 @@ class ExampleMidLevelUpdate():
                         print(f"Channel with error: {[(i, v.name) for i, v in enumerate(channel_error) if v != ResultAndError.NO_ERROR]}")
 
                 await asyncio.sleep(1)
-
-            # call stop mid level
-            await mid_level.stop()
         except Exception as e: # pylint:disable=broad-exception-caught
             print(e)
         finally:
+            # always try to stop mid level, even if an exception occurred in the loop above,
+            # otherwise the device only stops via its own stimulation keepalive timeout
+            if mid_level is not None:
+                try:
+                    await mid_level.stop()
+                except Exception as e: # pylint:disable=broad-exception-caught
+                    print(e)
             # request the keyboard thread to stop even on an exception above, so it
             # doesn't keep waiting for input that no longer matters
             if keyboard_input_thread is not None:
