@@ -16,7 +16,7 @@ class ProtocolHelper:
 
 
     @staticmethod
-    def send_packet(packet: Packet, packet_number: int, packet_buffer: PacketBuffer) -> PacketAck:
+    def send_packet(packet: Packet, packet_number: int, packet_buffer: PacketBuffer) -> None:
         """Send a packet and returns immediately"""
         packet.number = packet_number
         packet_buffer.add_open_acknowledge(packet)
