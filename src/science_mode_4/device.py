@@ -27,7 +27,7 @@ class Device():
         self._packet_factory = PacketFactory()
         self._packet_buffer = PacketBuffer(self._connection, self._packet_factory)
         self._packet_number_generator = PacketNumberGenerator()
-        self._capabilities = capabilities + [DeviceCapability.GENERAL]
+        self._capabilities: set[DeviceCapability] = set(capabilities) | {DeviceCapability.GENERAL}
         self._layer: dict[DeviceCapability, Layer] = {}
 
         self._layer_general = LayerGeneral(self._packet_buffer, self._packet_factory, self._packet_number_generator)
@@ -54,7 +54,7 @@ class Device():
     @property
     def packet_number_generator(self) -> PacketNumberGenerator:
         """Getter for packet number generator"""
-        return self.packet_number_generator
+        return self._packet_number_generator
 
 
     @property

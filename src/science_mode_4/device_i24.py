@@ -10,7 +10,7 @@ class DeviceI24(Device):
     """Device class for a I24 device"""
 
     def __init__(self, conn: Connection):
-        super().__init__(conn, [DeviceCapability.DYSCOM])
+        super().__init__(conn, {DeviceCapability.DYSCOM})
 
         self._layer_dyscom = LayerDyscom(self._packet_buffer, self._packet_factory, self._packet_number_generator)
 

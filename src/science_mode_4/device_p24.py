@@ -11,8 +11,8 @@ class DeviceP24(Device):
     """Device class for a P24 device"""
 
     def __init__(self, conn: Connection):
-        super().__init__(conn, [DeviceCapability.LOW_LEVEL,
-                                DeviceCapability.MID_LEVEL])
+        super().__init__(conn, {DeviceCapability.LOW_LEVEL,
+                                DeviceCapability.MID_LEVEL})
 
         self._layer_mid_level = LayerMidLevel(self._packet_buffer, self._packet_factory, self._packet_number_generator)
         self._layer_low_level = LayerLowLevel(self._packet_buffer, self._packet_factory, self._packet_number_generator)
