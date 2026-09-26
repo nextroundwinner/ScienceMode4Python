@@ -98,10 +98,10 @@ class ExampleMidLevelUpdate():
         print("Press * or / to increase or decrease current by 10mA")
         print("Press q to quit")
 
-        # create keyboard input thread for non blocking console input
-        keyboard_input_thread = KeyboardInputThread(input_callback)
-
         connection = None
+        # created only once mid_level is assigned below, because input_callback
+        # references it and a key press before that would raise an exception
+        keyboard_input_thread = None
         try:
             # get comport from command line argument
             com_port = ExampleUtils.get_comport_from_commandline_argument()
@@ -124,6 +124,10 @@ class ExampleMidLevelUpdate():
             # set stimulation pattern, P24 device will now stimulate according this pattern
             await mid_level.update(self._channel_config)
 
+            # only create the keyboard input thread once mid_level is assigned, since
+            # input_callback references it and a key press before that would raise an exception
+            keyboard_input_thread = KeyboardInputThread(input_callback)
+
             possible_errors = [ResultAndError.ELECTRODE_ERROR, ResultAndError.PULSE_TIMEOUT_ERROR, ResultAndError.PULSE_LOW_CURRENT_ERROR]
             while keyboard_input_thread.is_alive():
                 # we have to call get_current_data() every 1.5s to keep stimulation ongoing
@@ -141,7 +145,8 @@ class ExampleMidLevelUpdate():
         finally:
             # request the keyboard thread to stop even on an exception above, so it
             # doesn't keep waiting for input that no longer matters
-            keyboard_input_thread.stop()
+            if keyboard_input_thread is not None:
+                keyboard_input_thread.stop()
             # always close the serial port connection, even if an exception occurred above,
             # otherwise the COM port stays locked for subsequent runs
             if connection is not None:

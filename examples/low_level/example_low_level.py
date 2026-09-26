@@ -58,13 +58,14 @@ async def main() -> int:
     print("Press 1 or 2 to stimulate green or yellow connector")
     print("Press + or - to increase or decrease current")
     print("Press q to quit")
-    # create keyboard input thread for non blocking console input
-    keyboard_input_thread = KeyboardInputThread(input_callback)
 
     # get comport from command line argument
     com_port = ExampleUtils.get_comport_from_commandline_argument()
 
     connection = None
+    # created only once low_level_layer is assigned below, because input_callback
+    # references it and a key press before that would raise an exception
+    keyboard_input_thread = None
     try:
         # create serial port connection
         connection = SerialPortConnection(com_port)
@@ -82,6 +83,10 @@ async def main() -> int:
 
         # call init low level
         await low_level_layer.init(LowLevelMode.NO_MEASUREMENT, LowLevelHighVoltageSource.STANDARD)
+
+        # only create the keyboard input thread once low_level_layer is assigned, since
+        # input_callback references it and a key press before that would raise an exception
+        keyboard_input_thread = KeyboardInputThread(input_callback)
 
         # now we can start stimulation
         while keyboard_input_thread.is_alive():
@@ -102,7 +107,8 @@ async def main() -> int:
     finally:
         # request the keyboard thread to stop even on an exception above, so it
         # doesn't keep waiting for input that no longer matters
-        keyboard_input_thread.stop()
+        if keyboard_input_thread is not None:
+            keyboard_input_thread.stop()
         # always close the serial port connection, even if an exception occurred above,
         # otherwise the COM port stays locked for subsequent runs
         if connection is not None:
