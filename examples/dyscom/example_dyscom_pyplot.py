@@ -8,7 +8,7 @@ from science_mode_4 import SerialPortConnection
 from science_mode_4.dyscom.ads129x.ads129x_config_register_1 import Ads129xOutputDataRate, Ads129xPowerMode
 from science_mode_4.dyscom.dyscom_get_operation_mode import PacketDyscomGetAckOperationMode
 from science_mode_4.dyscom.dyscom_send_live_data import PacketDyscomSendLiveData
-from science_mode_4.dyscom.dyscom_types import DyscomInitParams, DyscomPowerModulePowerType, DyscomPowerModuleType, DyscomSignalType
+from science_mode_4.dyscom.dyscom_types import DyscomGetType, DyscomInitParams, DyscomPowerModulePowerType, DyscomPowerModuleType, DyscomSignalType
 from science_mode_4.utils.logger import logger
 from examples.utils.example_utils import ExampleUtils
 from examples.utils.pyplot_utils import PyPlotHelper
@@ -62,7 +62,9 @@ async def main() -> int:
             while True:
                 ack = dyscom.packet_buffer.get_packet_from_buffer(live_data_counter == 0)
                 if ack:
-                    if ack.command == Commands.DL_GET_ACK:
+                    # because there are multiple get commands, we need to additionally check kind,
+                    # which is always associated DyscomGetType
+                    if ack.command == Commands.DL_GET_ACK and ack.kind == DyscomGetType.OPERATION_MODE:
                         om_ack: PacketDyscomGetAckOperationMode = ack
                         print(f"Operation mode {om_ack.operation_mode.name}")
                     elif ack.command == Commands.DL_SEND_LIVE_DATA:
