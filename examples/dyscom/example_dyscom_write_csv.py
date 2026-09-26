@@ -22,7 +22,15 @@ from examples.utils.csv_utils import CsvHelper
 def main():
     """Main function"""
 
-    csv_helper = CsvHelper("values.csv", ["package_nr", "Channel 1", "Channel 2", "Channel 3", "Channel 4", "Channel 5", "time_delta"])
+    # signal types to measure
+    signal_types = [DyscomSignalType.BI, DyscomSignalType.EMG_1, DyscomSignalType.EMG_2, DyscomSignalType.BREATHING]
+
+    # the I24 always sends 5 samples per live data packet, regardless of how many signal
+    # types were configured above (observed behaviour, reason unknown), so the csv header
+    # is sized after this instead of len(signal_types) to avoid a column mismatch
+    device_sample_count = 5
+
+    csv_helper = CsvHelper("values.csv", ["package_nr"] + [f"Channel {i + 1}" for i in range(device_sample_count)] + ["time_delta"])
     csv_helper.start()
 
     async def device_communication() -> int:
@@ -54,8 +62,7 @@ def main():
             await dyscom.power_module(DyscomPowerModuleType.MEASUREMENT, DyscomPowerModulePowerType.SWITCH_ON)
             # call init with 4k sample rate and enable signal types
             init_params = DyscomInitParams()
-            init_params.signal_type = [DyscomSignalType.BI, DyscomSignalType.EMG_1,\
-                                    DyscomSignalType.EMG_2, DyscomSignalType.BREATHING]
+            init_params.signal_type = signal_types
             init_params.register_map_ads129x.config_register_1.output_data_rate = Ads129xOutputDataRate.HR_MODE_4_KSPS__LP_MODE_2_KSPS
             init_params.register_map_ads129x.config_register_1.power_mode = Ads129xPowerMode.HIGH_RESOLUTION
             await dyscom.init(init_params)
@@ -102,9 +109,7 @@ def main():
                             print(f"SendLiveData status error {sld.samples}")
                             break
 
-                        csv_helper.append_values(ack.number, [sld.samples[0].value, sld.samples[1].value,\
-                                                                sld.samples[2].value, sld.samples[3].value,\
-                                                                sld.samples[4].value], sld.time_offset)
+                        csv_helper.append_values(ack.number, [sample.value for sample in sld.samples], sld.time_offset)
                     elif ack.command == Commands.DL_STOP_ACK:
                         break
                 else:
