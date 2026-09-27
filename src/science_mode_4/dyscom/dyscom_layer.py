@@ -105,7 +105,7 @@ class LayerDyscom(Layer):
 
 
     async def get_file_info(self, filename: str) -> DyscomGetFileInfoResult:
-        """Sends dyscom get type file by name and waits for response, returns filename, block offset, filesize and number of blocks"""
+        """Sends dyscom get file info and waits for response, returns filename, block offset, filesize and number of blocks"""
         p = PacketDyscomGetFileInfo(filename)
         ack: PacketDyscomGetAckFileInfo = await self.send_packet_and_wait(p)
         self._check_result_error(ack.result_error, "DyscomGetFileInfo")
@@ -129,7 +129,7 @@ class LayerDyscom(Layer):
         """Sends dyscom get type operation mode and waits for response, returns operation mode"""
         p = PacketDyscomGetOperationMode()
         ack: PacketDyscomGetAckOperationMode = await self.send_packet_and_wait(p)
-        self._check_result_error(ack.result_error, "DyscomGetFirmwareVersion")
+        self._check_result_error(ack.result_error, "PacketDyscomGetOperationMode")
         logger().info("Dyscom get operation mode: %s", ack.operation_mode.name)
         return ack.operation_mode
 
@@ -145,7 +145,7 @@ class LayerDyscom(Layer):
         """Sends dyscom power module and waits for response, returns module and power"""
         p = PacketDyscomPowerModule(module, power)
         ack: PacketDyscomPowerModuleAck = await self.send_packet_and_wait(p)
-        self._check_result_error(ack.result_error, "DyscomStart")
+        self._check_result_error(ack.result_error, "PacketDyscomPowerModule")
         logger().info("Dyscom power module, module: %s, power: %s", ack.module.name, ack.power.name)
         return DyscomPowerModuleResult(ack.module, ack.power)
 
