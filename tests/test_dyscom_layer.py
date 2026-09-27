@@ -83,11 +83,15 @@ def _run_init(params: DyscomInitParams):
         asyncio.run(dyscom.init(params))
 
 
-def test_init_warns_for_sd_storage_mode_with_duration_below_one_minute(caplog):
-    # firmware stops a sd recording at the minute boundary of start time + duration, so
-    # with the default duration of 0 a recording stops almost immediately (verified on a real I24)
+@pytest.mark.parametrize("duration", [datetime.timedelta(0), datetime.timedelta(seconds=59),
+                                      datetime.timedelta(hours=24), datetime.timedelta(days=2)])
+def test_init_warns_for_sd_storage_mode_with_duration_stopping_immediately(caplog, duration):
+    # firmware stops a sd recording at the minute boundary of start time + duration, compared by
+    # hour and minute only, so with a duration of 0 (default) or 24 hours a recording stops almost
+    # immediately (both verified on a real I24)
     params = DyscomInitParams()
     params.flags = {DyscomInitFlag.ENABLE_SD_STORAGE_MODE}
+    params.duration = duration
 
     with caplog.at_level(logging.WARNING, logger="science_mode_4"):
         _run_init(params)
@@ -95,10 +99,12 @@ def test_init_warns_for_sd_storage_mode_with_duration_below_one_minute(caplog):
     assert any(r.levelno == logging.WARNING and "duration" in r.getMessage() for r in caplog.records)
 
 
-def test_init_does_not_warn_for_sd_storage_mode_with_sufficient_duration(caplog):
+@pytest.mark.parametrize("duration", [datetime.timedelta(seconds=60), datetime.timedelta(minutes=2),
+                                      datetime.timedelta(hours=23, minutes=59, seconds=59)])
+def test_init_does_not_warn_for_sd_storage_mode_with_sufficient_duration(caplog, duration):
     params = DyscomInitParams()
     params.flags = {DyscomInitFlag.ENABLE_SD_STORAGE_MODE}
-    params.duration = datetime.timedelta(minutes=2)
+    params.duration = duration
 
     with caplog.at_level(logging.WARNING, logger="science_mode_4"):
         _run_init(params)

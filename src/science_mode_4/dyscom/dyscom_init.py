@@ -21,10 +21,12 @@ class PacketDyscomInit(Packet):
     """Packet for dyscom init"""
 
 
-    def __init__(self, params: DyscomInitParams = DyscomInitParams()):
+    def __init__(self, params: DyscomInitParams | None = None):
         super().__init__()
         self._command = Commands.DL_INIT
-        self._params = params
+        # create a new instance per packet, a default argument value "DyscomInitParams()" is
+        # evaluated only once, so all packets created without params would share one instance
+        self._params = DyscomInitParams() if params is None else params
 
 
     @property
@@ -52,7 +54,7 @@ class PacketDyscomInitAck(PacketAck):
         self._command = Commands.DL_INIT_ACK
         self._result_error = ResultAndError.NO_ERROR
         self._register_map_ads129x = Ads129x()
-        self._measurement_file_id: str
+        self._measurement_file_id = ""
         self._init_state = DyscomInitState.SUCCESS
         self._frequency_out = DyscomFrequencyOut.SAMPLES_PER_SECOND_4K
 

@@ -162,7 +162,9 @@ class DyscomInitParams():
     proband_number: str = ""
     # planned measurement duration, only relevant for sd storage mode: the device stops recording
     # at the minute boundary of start time + duration (seconds are ignored by firmware), so with
-    # the default of 0 a sd recording stops almost immediately after start
+    # the default of 0 a sd recording stops almost immediately after start. Firmware compares
+    # only hour and minute, so durations of 24 hours and more stop immediately as well, and if
+    # device start hour + duration hours is exactly 24, recording never stops automatically
     duration: datetime.timedelta = field(default_factory=datetime.timedelta)
     signal_type: list[DyscomSignalType] = field(default_factory=lambda: [DyscomSignalType.BI,  DyscomSignalType.EMG_1])
     sync_signal: bool = False

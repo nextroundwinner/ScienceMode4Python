@@ -35,11 +35,14 @@ class LayerDyscom(Layer):
 
     async def init(self, params: DyscomInitParams) -> DyscomInitResult:
         """Send dyscom init command and waits for response"""
-        if (DyscomInitFlag.ENABLE_SD_STORAGE_MODE in params.flags) and (params.duration.total_seconds() < 60):
-            # firmware stops a sd recording at the minute boundary of start time + duration,
-            # so a duration below one minute stops the recording (almost) immediately
+        duration_in_seconds = params.duration.total_seconds()
+        if (DyscomInitFlag.ENABLE_SD_STORAGE_MODE in params.flags) and \
+            ((duration_in_seconds < 60) or (duration_in_seconds >= 24 * 60 * 60)):
+            # firmware stops a sd recording at the minute boundary of start time + duration, compared
+            # by hour and minute only, so a duration below one minute or of 24 hours and more stops
+            # the recording (almost) immediately (verified on a real I24 with 0 and 24 hours)
             logger().warning("Dyscom init with sd storage mode and duration %s, recording will stop almost immediately, "
-                             "set duration to at least one minute", params.duration)
+                             "set duration to at least one minute and less than 24 hours", params.duration)
         p = PacketDyscomInit(params)
         ack: PacketDyscomInitAck = await self.send_packet_and_wait(p)
         self._check_result_error(ack.result_error, "DyscomInit")

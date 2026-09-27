@@ -45,6 +45,9 @@ class _FixedDstTimezone(datetime.tzinfo):
     def dst(self, dt):
         return self._dst
 
+    def tzname(self, dt):
+        return "fixed_dst"
+
 
 def test_datetime_to_bytes_dst_flag_is_0_for_naive_datetime():
     assert DyscomHelper.datetime_to_bytes(datetime.datetime(2026, 1, 15, 12, 0, 0))[1] == 0
