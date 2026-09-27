@@ -160,6 +160,9 @@ class DyscomInitParams():
     proband_name: str = ""
     investigator_name: str = ""
     proband_number: str = ""
+    # planned measurement duration, only relevant for sd storage mode: the device stops recording
+    # at the minute boundary of start time + duration (seconds are ignored by firmware), so with
+    # the default of 0 a sd recording stops almost immediately after start
     duration: datetime.timedelta = field(default_factory=datetime.timedelta)
     signal_type: list[DyscomSignalType] = field(default_factory=lambda: [DyscomSignalType.BI,  DyscomSignalType.EMG_1])
     sync_signal: bool = False
@@ -176,6 +179,10 @@ class DyscomInitParams():
             raise ValueError(f"Investigator name must be shorter than 129 {self.investigator_name}")
         if len(self.proband_number) > 36:
             raise ValueError(f"Proband number must be shorter than 37 {self.proband_number}")
+        # total_seconds() instead of seconds, which is only the seconds part without days
+        duration_in_seconds = int(self.duration.total_seconds())
+        if (duration_in_seconds < 0) or (duration_in_seconds > 0xFFFFFFFF):
+            raise ValueError(f"Duration must be between 0..{0xFFFFFFFF} seconds {duration_in_seconds}")
 
 
         bb = ByteBuilder()
@@ -186,7 +193,7 @@ class DyscomInitParams():
         bb.append_bytes(DyscomHelper.str_to_bytes(self.investigator_name, 129))
         bb.append_bytes(DyscomHelper.str_to_bytes(self.proband_number, 37))
         bb.append_value(len(self.signal_type), 2, True)
-        bb.append_value(self.duration.seconds, 4, True)
+        bb.append_value(duration_in_seconds, 4, True)
         for x in range(8):
             bb.append_byte(self.signal_type[x] if x < len(self.signal_type) else DyscomSignalType.UNUSED)
         bb.append_byte(0)
@@ -201,4 +208,17 @@ class DyscomInitParams():
 
 
     def set_data(self, data: bytes):
-        """Convert bytes to information"""
+        """Convert bytes to information, inverse of get_data()"""
+        self.register_map_ads129x.set_data(data[0:26])
+        self.start_time = DyscomHelper.bytes_to_datetime(data[26:37])
+        self.system_time = DyscomHelper.bytes_to_datetime(data[37:48])
+        self.proband_name = DyscomHelper.bytes_to_str(data[48:177], 129)
+        self.investigator_name = DyscomHelper.bytes_to_str(data[177:306], 129)
+        self.proband_number = DyscomHelper.bytes_to_str(data[306:343], 37)
+        signal_type_count = min(int.from_bytes(data[343:345], "big"), 8)
+        self.duration = datetime.timedelta(seconds=int.from_bytes(data[345:349], "big"))
+        self.signal_type = [DyscomSignalType(x) for x in data[349:349 + signal_type_count]]
+        # data[357] is a reserved byte
+        self.sync_signal = data[358] != 0
+        self.filter = DyscomFilterType(data[359])
+        self.flags = {f for f in DyscomInitFlag if data[360] & (1 << f)}

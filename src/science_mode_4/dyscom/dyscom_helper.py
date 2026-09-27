@@ -8,7 +8,8 @@ from science_mode_4.utils.byte_builder import ByteBuilder
 class DyscomHelper:
     """Provides some helper functions"""
 
-    _unpack_func = struct.Struct("<BBBBBBBHh").unpack
+    # big endian, matching datetime_to_bytes() and all other multi byte dyscom fields
+    _unpack_func = struct.Struct(">BBBBBBBHh").unpack
 
     @staticmethod
     def datetime_to_bytes(dt: datetime.datetime) -> bytes:
@@ -23,7 +24,9 @@ class DyscomHelper:
         bb.append_byte(dt.second)
         bb.append_byte((dt.weekday() + 1) % 7)
         bb.append_value(dt.timetuple().tm_yday - 1, 2, True)
-        bb.append_value(dt.year - 1900, 2, True)
+        # full year (e.g. 2026), not years since 1900 like struct tm: verified with a real I24,
+        # sending 126 for 2026 made the device set its clock (and file names) to year 2014
+        bb.append_value(dt.year, 2, True)
 
         return bb.get_bytes()
 
@@ -32,11 +35,11 @@ class DyscomHelper:
     def bytes_to_datetime(data: bytes) -> datetime.datetime:
         """Converts dyscom datetime bytes to a datetime"""
         # pylint:disable=unused-variable
-        hour, dst, day, minute, month, second, _, _, year_since_1900 = \
+        hour, dst, day, minute, month, second, _, _, year = \
             DyscomHelper._unpack_func(data)
 
         # do we need to consider dst?
-        result = datetime.datetime(1900 + year_since_1900, month, day, hour, minute, second)
+        result = datetime.datetime(year, month, day, hour, minute, second)
         return result
 
 

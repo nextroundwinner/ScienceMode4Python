@@ -7,8 +7,8 @@ from science_mode_4.layer import Layer
 from science_mode_4.protocol.commands import Commands
 from science_mode_4.protocol.exceptions import ProtocolError
 from science_mode_4.utils.logger import logger
-from .dyscom_types import DyscomFrequencyOut, DyscomGetOperationModeType, DyscomInitState, DyscomPowerModuleType,\
-    DyscomPowerModulePowerType, DyscomSignalType, DyscomSysState, DyscomSysType
+from .dyscom_types import DyscomFilterType, DyscomFrequencyOut, DyscomGetOperationModeType, DyscomInitFlag, DyscomInitState,\
+    DyscomPowerModuleType, DyscomPowerModulePowerType, DyscomSignalType, DyscomSysState, DyscomSysType
 from .dyscom_init import DyscomInitResult, PacketDyscomInit, PacketDyscomInitAck, DyscomInitParams
 from .dyscom_get_file_system_status import PacketDyscomGetFileSystemStatus, PacketDyscomGetAckFileSystemStatus,\
     DyscomGetFileSystemStatusResult
@@ -34,6 +34,11 @@ class LayerDyscom(Layer):
 
     async def init(self, params: DyscomInitParams) -> DyscomInitResult:
         """Send dyscom init command and waits for response"""
+        if (DyscomInitFlag.ENABLE_SD_STORAGE_MODE in params.flags) and (params.duration.total_seconds() < 60):
+            # firmware stops a sd recording at the minute boundary of start time + duration,
+            # so a duration below one minute stops the recording (almost) immediately
+            logger().warning("Dyscom init with sd storage mode and duration %s, recording will stop almost immediately, "
+                             "set duration to at least one minute", params.duration)
         p = PacketDyscomInit(params)
         ack: PacketDyscomInitAck = await self.send_packet_and_wait(p)
         self._check_result_error(ack.result_error, "DyscomInit")
@@ -46,7 +51,8 @@ class LayerDyscom(Layer):
 
 
     async def get_file_system_status(self) -> DyscomGetFileSystemStatusResult:
-        """Sends dyscom get type file system status and waits for response, returns file system ready, used size and free size"""
+        """Sends dyscom get type file system status and waits for response, returns file system ready, used size and free size.
+        Note: not implemented by I24 firmware, all values are always 0"""
         p = PacketDyscomGetFileSystemStatus()
         ack: PacketDyscomGetAckFileSystemStatus = await self.send_packet_and_wait(p)
         self._check_result_error(ack.result_error, "DyscomGetFileSystemStatus")
@@ -56,7 +62,8 @@ class LayerDyscom(Layer):
 
 
     async def get_list_of_measurement_meta_info(self) -> int:
-        """Sends dyscom get type list of measurement meta info and waits for response, returns number of measurements"""
+        """Sends dyscom get type list of measurement meta info and waits for response, returns number of measurements.
+        Note: not implemented by I24 firmware, number of measurements is always 0 and no DL_MMI packets are sent"""
         p = PacketDyscomGetListOfMeasurementMetaInfo()
         ack: PacketDyscomGetAckListOfMeasurementMetaInfo = await self.send_packet_and_wait(p)
         self._check_result_error(ack.result_error, "DyscomGetListOfMeasurementMetaInfo")
@@ -104,7 +111,8 @@ class LayerDyscom(Layer):
 
 
     async def get_battery(self) -> DyscomGetBatteryResult:
-        """Sends dyscom get type batter and waits for response, returns voltage, current, percentage, temperature and energy state"""
+        """Sends dyscom get type battery and waits for response, returns voltage, current, percentage, temperature and energy state.
+        Note: not implemented by I24 firmware, all values are always 0"""
         p = PacketDyscomGetBatteryStatus()
         ack: PacketDyscomGetAckBatteryStatus = await self.send_packet_and_wait(p)
         self._check_result_error(ack.result_error, "DyscomGetBatteryStatus")
@@ -139,7 +147,10 @@ class LayerDyscom(Layer):
 
 
     async def sys(self, sys_type: DyscomSysType, filename: str = "") -> DyscomSysResult:
-        """Sends dyscom sys and waits for response, returns type, state and filename"""
+        """Sends dyscom sys and waits for response, returns type, state and filename.
+        Note: DELETE_FILE does not work with I24 firmware, because the firmware ignores filename.
+        DEVICE_STORAGE is acknowledged as successful, but I24 firmware does not switch to USB mass
+        storage mode (USB MSC is not implemented), device reports operation mode UNDEFINED afterwards"""
         p = PacketDyscomSys(sys_type, filename)
         ack: PacketDyscomSysAck = await self.send_packet_and_wait(p)
         self._check_result_error(ack.result_error, "DyscomSys")
@@ -152,7 +163,7 @@ class LayerDyscom(Layer):
 
     def send_send_file_ack(self, block_number: int):
         """Sends dyscom send file ack and returns immediately without waiting for response"""
-        logger().info("Dyscom send file ack, block_number: %d", block_number)
+        logger().debug("Dyscom send file ack, block_number: %d", block_number)
         p = PacketDyscomSendFileAck(block_number)
         self.send_packet(p)
 
@@ -249,8 +260,14 @@ class LayerDyscom(Layer):
 
             result[signal_type] = []
 
-        # sample rate
-        sample_rate = DyscomFrequencyOut(meas_data[3])
+        # sample rate, derived from filter (header byte 4) like firmware does, because header byte 3
+        # (output frequency) is written by firmware before filter is applied and may contain the
+        # frequency of the previous init
+        filter_sample_rate_map = {DyscomFilterType.FILTER_OFF: DyscomFrequencyOut.SAMPLES_PER_SECOND_4K,
+                                  DyscomFilterType.PREDEFINED_FILTER_1: DyscomFrequencyOut.SAMPLES_PER_SECOND_1K,
+                                  DyscomFilterType.PREDEFINED_FILTER_2: DyscomFrequencyOut.SAMPLES_PER_SECOND_4K,
+                                  DyscomFilterType.PREDEFINED_FILTER_3: DyscomFrequencyOut.SAMPLES_PER_SECOND_1K}
+        sample_rate = filter_sample_rate_map[DyscomFilterType(meas_data[4])]
 
         # build string to unpack samples
         # each sample consist of a time difference and n time signal type values

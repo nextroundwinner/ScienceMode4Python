@@ -9,7 +9,8 @@ from .dyscom_types import DyscomInitParams
 
 class PacketDyscomSendMeasurementMetaInfo(PacketAck):
     """Packet for dyscom send measurement meta info (this is technically not an acknowledge, but it is handled as such,
-    because it is send automatically from device)"""
+    because it is send automatically from device).
+    Note: I24 firmware never sends this packet"""
 
 
     def __init__(self, data: bytes):

@@ -3,6 +3,7 @@ DO NOT USE THIS FILE, USE EXAMPLES INSTEAD"""
 
 import sys
 import asyncio
+import datetime
 
 from science_mode_4.device_i24 import DeviceI24
 from science_mode_4.dyscom.dyscom_types import DyscomFilterType, DyscomInitFlag, DyscomInitParams, DyscomPowerModulePowerType,\
@@ -52,6 +53,8 @@ async def main() -> int:
     init_params.filter = DyscomFilterType.PREDEFINED_FILTER_1
     # we want no live data and write all data to memory card
     init_params.flags = [DyscomInitFlag.ENABLE_SD_STORAGE_MODE]
+    # device stops recording at the minute boundary of start time + duration
+    init_params.duration = datetime.timedelta(minutes=2)
     init_result = await dyscom.init(init_params)
 
     # start dyscom measurement

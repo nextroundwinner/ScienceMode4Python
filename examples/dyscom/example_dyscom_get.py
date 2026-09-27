@@ -63,6 +63,11 @@ async def main() -> int:
         # get file info for calibration file
         file_info = await dyscom.get_file_info(calibration_filename)
         print(f"Calibration file info checksum: {file_info.checksum}")
+
+        ####
+        # switch device into mass storage -> does not work
+        # mass_storage = await dyscom.sys(DyscomSysType.DEVICE_STORAGE)
+        # print(f"System call to set into mass storage, type {mass_storage.sys_type.name}, state: {mass_storage.state.name}")
     finally:
         # always close the serial port connection, even if an exception occurred above,
         # otherwise the COM port stays locked for subsequent runs
