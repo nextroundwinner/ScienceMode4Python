@@ -8,9 +8,14 @@ import logging
 import struct
 from unittest.mock import AsyncMock, patch
 
+import pytest
 from science_mode_4.device_i24 import DeviceI24
+from science_mode_4.dyscom.dyscom_get_file_by_name import DyscomGetFileByNameResult
 from science_mode_4.dyscom.dyscom_init import PacketDyscomInitAck
-from science_mode_4.dyscom.dyscom_types import DyscomFilterType, DyscomFrequencyOut, DyscomInitFlag, DyscomInitParams,     DyscomSignalType
+from science_mode_4.dyscom.dyscom_send_file import PacketDyscomSendFile
+from science_mode_4.dyscom.dyscom_types import DyscomFileByNameMode, DyscomFilterType, DyscomFrequencyOut, \
+    DyscomGetOperationModeType, DyscomInitFlag, DyscomInitParams, DyscomSignalType
+from science_mode_4.protocol.exceptions import ProtocolError
 from science_mode_4.utils.null_connection import NullConnection
 
 
@@ -109,3 +114,90 @@ def test_init_does_not_warn_for_live_data_mode(caplog):
         _run_init(params)
 
     assert not any(r.levelno == logging.WARNING for r in caplog.records)
+
+
+def _send_file_packet(block_number: int, payload: bytes) -> PacketDyscomSendFile:
+    return PacketDyscomSendFile(struct.pack(">IH", block_number, len(payload)) + payload)
+
+
+def _run_get_file_content(packets: list, number_of_blocks: int, filesize: int, block_timeout_in_seconds: float = 5):
+    """Runs get_file_content with a mocked device, packets are returned one by one by the packet buffer
+    (None means no packet available), returns layer mock state and result or raised exception"""
+    dyscom = DeviceI24(NullConnection()).get_layer_dyscom()
+    file_by_name = DyscomGetFileByNameResult("test", 0, filesize, number_of_blocks, DyscomFileByNameMode.MULTI_BLOCK)
+    remaining = list(packets)
+
+    def get_packet_from_buffer(*_args):
+        if remaining:
+            item = remaining.pop(0)
+            if isinstance(item, BaseException):
+                raise item
+            return item
+        return None
+
+    with patch.object(dyscom, "get_operation_mode", new_callable=AsyncMock, return_value=DyscomGetOperationModeType.IDLE), \
+         patch.object(dyscom, "get_file_by_name", new_callable=AsyncMock, return_value=file_by_name), \
+         patch.object(dyscom, "start", new_callable=AsyncMock), \
+         patch.object(dyscom, "stop", new_callable=AsyncMock) as stop, \
+         patch.object(dyscom, "send_send_file_ack") as send_ack, \
+         patch.object(dyscom.packet_buffer, "get_packet_from_buffer", side_effect=get_packet_from_buffer):
+        try:
+            result = asyncio.run(dyscom.get_file_content("test", block_timeout_in_seconds))
+        except Exception as e: # pylint:disable=broad-exception-caught
+            result = e
+    return result, stop, send_ack
+
+
+def test_get_file_content_returns_blocks_trimmed_to_filesize():
+    result, stop, send_ack = _run_get_file_content(
+        [_send_file_packet(1, b"abcd"), None, _send_file_packet(2, b"efgh")], number_of_blocks=2, filesize=6)
+
+    assert result == b"abcdef"
+    assert [c.args[0] for c in send_ack.call_args_list] == [1, 2]
+    stop.assert_awaited_once()
+
+
+def test_get_file_content_ignores_duplicate_block():
+    # regression test: every received block was appended, so a duplicate corrupted the content
+    result, _, send_ack = _run_get_file_content(
+        [_send_file_packet(1, b"abcd"), _send_file_packet(1, b"abcd"), _send_file_packet(2, b"efgh")],
+        number_of_blocks=2, filesize=8)
+
+    assert result == b"abcdefgh"
+    assert [c.args[0] for c in send_ack.call_args_list] == [1, 2]
+
+
+def test_get_file_content_raises_on_missing_block_and_stops_transfer():
+    # regression test: the receive loop had no timeout, so a missing block (device never
+    # resends one) made get_file_content hang forever and the device stayed in DATATRANSFER
+    result, stop, _ = _run_get_file_content([_send_file_packet(1, b"abcd")], number_of_blocks=2, filesize=8,
+                                            block_timeout_in_seconds=0.05)
+
+    assert isinstance(result, ProtocolError)
+    assert "block 2 of 2" in str(result)
+    stop.assert_awaited_once()
+
+
+def test_get_file_content_stops_transfer_and_keeps_original_error_if_stop_fails():
+    dyscom_error = RuntimeError("connection lost")
+    dyscom = DeviceI24(NullConnection()).get_layer_dyscom()
+    file_by_name = DyscomGetFileByNameResult("test", 0, 4, 1, DyscomFileByNameMode.MULTI_BLOCK)
+
+    with patch.object(dyscom, "get_operation_mode", new_callable=AsyncMock, return_value=DyscomGetOperationModeType.IDLE), \
+         patch.object(dyscom, "get_file_by_name", new_callable=AsyncMock, return_value=file_by_name), \
+         patch.object(dyscom, "start", new_callable=AsyncMock), \
+         patch.object(dyscom, "stop", new_callable=AsyncMock, side_effect=ProtocolError("stop failed")) as stop, \
+         patch.object(dyscom.packet_buffer, "get_packet_from_buffer", side_effect=dyscom_error):
+        with pytest.raises(RuntimeError) as exc_info:
+            asyncio.run(dyscom.get_file_content("test"))
+
+    assert exc_info.value is dyscom_error
+    stop.assert_awaited_once()
+
+
+def test_get_file_content_with_zero_blocks_returns_empty_content():
+    result, stop, send_ack = _run_get_file_content([], number_of_blocks=0, filesize=0)
+
+    assert result == b""
+    send_ack.assert_not_called()
+    stop.assert_awaited_once()

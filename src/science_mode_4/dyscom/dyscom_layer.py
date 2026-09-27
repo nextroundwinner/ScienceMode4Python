@@ -2,6 +2,7 @@
 
 import asyncio
 import struct
+import time
 
 from science_mode_4.layer import Layer
 from science_mode_4.protocol.commands import Commands
@@ -198,8 +199,9 @@ class LayerDyscom(Layer):
         self.send_packet(p)
 
 
-    async def get_file_content(self, filename: str) -> bytes:
-        """Gets content of a file. Device must be in Idle operating mode"""
+    async def get_file_content(self, filename: str, block_timeout_in_seconds: float = 5) -> bytes:
+        """Gets content of a file. Device must be in Idle operating mode.
+        Raises ProtocolError if no expected block arrives within block_timeout_in_seconds"""
         om = await self.get_operation_mode()
         if om != DyscomGetOperationModeType.IDLE:
             raise ProtocolError(f"Error wrong operation mode {om.name}")
@@ -214,29 +216,16 @@ class LayerDyscom(Layer):
         # start measurement, so device send automatically SendFile packets
         await self.start()
 
-        blocks: list[bytes] = []
-
-        if file_by_name.number_of_blocks > 0:
-            while True:
-                # process all available packages
-                ack = self.packet_buffer.get_packet_from_buffer()
-                if ack:
-                    if ack.command == Commands.DL_SEND_FILE:
-                        # process SendFile data
-                        sf: PacketDyscomSendFile = ack
-                        blocks.append(sf.data)
-
-                        # send acknowledge for this packet, so device can send
-                        # next block automatically
-                        self.send_send_file_ack(sf.block_number)
-
-                        # check if we have all blocks
-                        if sf.block_number >= file_by_name.number_of_blocks:
-                            break
-                    else:
-                        logger().warning("Unexpected command: %d", ack.command)
-
-                await asyncio.sleep(0.01)
+        try:
+            blocks = await self._receive_file_blocks(file_by_name.number_of_blocks, block_timeout_in_seconds)
+        except BaseException:
+            # always stop data transfer, otherwise device stays in DATATRANSFER mode, but do not
+            # let an error from stop() hide the original error
+            try:
+                await self.stop()
+            except Exception as e: # pylint:disable=broad-exception-caught
+                logger().warning("Dyscom stop after failed file transfer failed: %s", e)
+            raise
 
         # stop measurement, we have all blocks
         await self.stop()
@@ -244,6 +233,41 @@ class LayerDyscom(Layer):
         # trim to filesize (because SendFile sends always data with blocksize)
         result = b"".join(blocks)[0:file_by_name.filesize]
         return result
+
+
+    async def _receive_file_blocks(self, number_of_blocks: int, block_timeout_in_seconds: float) -> list[bytes]:
+        """Receives SendFile blocks 1..number_of_blocks and acknowledges each one.
+        Device sends the next block only after the current one was acknowledged and never
+        resends a block, so a missing block would otherwise stall the transfer forever"""
+        blocks: list[bytes] = []
+        expected_block_number = 1
+        deadline = time.monotonic() + block_timeout_in_seconds
+
+        while expected_block_number <= number_of_blocks:
+            ack = self.packet_buffer.get_packet_from_buffer()
+            if ack is None:
+                if time.monotonic() > deadline:
+                    raise ProtocolError(f"Timeout waiting for file block {expected_block_number} of {number_of_blocks}")
+                await asyncio.sleep(0.01)
+                continue
+
+            if ack.command != Commands.DL_SEND_FILE:
+                logger().warning("Unexpected command: %d", ack.command)
+                continue
+
+            sf: PacketDyscomSendFile = ack
+            if sf.block_number != expected_block_number:
+                # e.g. a duplicate, appending it would corrupt the file content
+                logger().warning("Unexpected file block number %d, expected %d", sf.block_number, expected_block_number)
+                continue
+
+            blocks.append(sf.data)
+            # send acknowledge for this packet, so device can send next block automatically
+            self.send_send_file_ack(sf.block_number)
+            expected_block_number += 1
+            deadline = time.monotonic() + block_timeout_in_seconds
+
+        return blocks
 
 
     async def get_meas_file_content(self, filename: str) -> tuple[DyscomFrequencyOut, dict[DyscomSignalType, list[float]]]:
