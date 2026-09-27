@@ -17,7 +17,9 @@ class DyscomHelper:
         bb = ByteBuilder()
         bb.append_byte(dt.hour)
         dst = dt.dst()
-        bb.append_byte(0 if dst is None or dst == 0 else 1)
+        # dst() returns None (naive datetime) or a timedelta, which never equals 0 (int),
+        # so check truthiness: timedelta(0) is falsy
+        bb.append_byte(1 if dst else 0)
         bb.append_byte(dt.day)
         bb.append_byte(dt.minute)
         bb.append_byte(dt.month)

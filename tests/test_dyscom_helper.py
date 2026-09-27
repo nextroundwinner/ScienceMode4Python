@@ -2,6 +2,8 @@
 # pylint: disable=missing-function-docstring
 # test names are self-explanatory, docstrings would only restate them
 
+import datetime
+
 import pytest
 from science_mode_4.dyscom.dyscom_helper import DyscomHelper
 
@@ -29,3 +31,32 @@ def test_str_to_bytes_raises_for_value_exactly_at_byte_count():
     # length byte_count (with none left over for the terminator) must fail too
     with pytest.raises(ValueError):
         DyscomHelper.str_to_bytes("abcdefg", 7)
+
+
+class _FixedDstTimezone(datetime.tzinfo):
+    """Timezone with a fixed dst offset"""
+
+    def __init__(self, dst: datetime.timedelta):
+        self._dst = dst
+
+    def utcoffset(self, dt):
+        return datetime.timedelta(hours=1) + self._dst
+
+    def dst(self, dt):
+        return self._dst
+
+
+def test_datetime_to_bytes_dst_flag_is_0_for_naive_datetime():
+    assert DyscomHelper.datetime_to_bytes(datetime.datetime(2026, 1, 15, 12, 0, 0))[1] == 0
+
+
+def test_datetime_to_bytes_dst_flag_is_0_for_timezone_without_dst():
+    # regression test: dst() returns timedelta(0) here, which was compared with int 0
+    # (never equal), so the dst flag was wrongly set to 1
+    dt = datetime.datetime(2026, 1, 15, 12, 0, 0, tzinfo=_FixedDstTimezone(datetime.timedelta(0)))
+    assert DyscomHelper.datetime_to_bytes(dt)[1] == 0
+
+
+def test_datetime_to_bytes_dst_flag_is_1_for_timezone_with_dst():
+    dt = datetime.datetime(2026, 7, 15, 12, 0, 0, tzinfo=_FixedDstTimezone(datetime.timedelta(hours=1)))
+    assert DyscomHelper.datetime_to_bytes(dt)[1] == 1
