@@ -40,7 +40,7 @@ class Packet():
 
     def get_data(self) -> bytes:
         """Return packet payload"""
-        return []
+        return bytes()
 
 
     def create_copy(self) -> "Packet":

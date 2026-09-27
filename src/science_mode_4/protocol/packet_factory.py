@@ -10,8 +10,8 @@ class PacketFactory():
 
 
     def __init__(self):
-        # keys for dict: command, kind, packet class
-        self.data: dict[int, int, Packet] = {}
+        # key: (command, kind), value: packet instance used as prototype to create copies
+        self.data: dict[tuple[int, int], Packet] = {}
         # register all subclasses of Packet (exclude Packet and PacketAck, because these are base classes)
         self._handle_class(Packet)
 

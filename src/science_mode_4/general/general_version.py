@@ -34,7 +34,7 @@ class PacketGeneralGetExtendedVersionAck(PacketAck):
         self._successful = False
         self._firmware_version = ""
         self._science_mode_version = ""
-        self._firmware_hash = 0
+        self._firmware_hash = ""
         self._hash_type = GeneralHashType.UNINITIALIZED
         self._is_valid_hash = False
 
@@ -67,13 +67,13 @@ class PacketGeneralGetExtendedVersionAck(PacketAck):
 
 
     @property
-    def firmware_hash(self) -> int:
+    def firmware_hash(self) -> str:
         """Getter for FirmwareHash"""
         return self._firmware_hash
 
 
     @property
-    def hash_type(self) -> int:
+    def hash_type(self) -> GeneralHashType:
         """Getter for HashType"""
         return self._hash_type
 
