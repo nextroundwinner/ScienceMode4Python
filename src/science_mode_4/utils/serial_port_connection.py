@@ -35,9 +35,9 @@ class SerialPortConnection(Connection):
         return filtered_ports
 
 
-    def __init__(self, port: str, read_timeout_ins_s: float = 0, write_timeout_ins_s: float = 1,
+    def __init__(self, port: str, read_timeout_in_s: float = 0, write_timeout_in_s: float = 1,
                  error_timeout_in_s: float = 3, max_port_reopen_attempts: int = 3):
-        self._ser = serial.Serial(timeout = read_timeout_ins_s, write_timeout=write_timeout_ins_s)
+        self._ser = serial.Serial(timeout = read_timeout_in_s, write_timeout=write_timeout_in_s)
         self._ser.port = port
         self._error_timeout_in_s = error_timeout_in_s
         self._max_port_reopen_attempts = max_port_reopen_attempts
@@ -97,7 +97,7 @@ class SerialPortConnection(Connection):
 
 
     def _reconnect_and_resend_last_written_data(self):
-        """Closes and reopens the connection, retrying up to _MAX_REOPEN_ATTEMPTS times,
+        """Closes and reopens the connection, retrying up to _max_port_reopen_attempts times,
         then resends the last written data. This handles transient serial errors (e.g. a
         ClearCommError on Windows) internally instead of raising out of read(). If reopening
         still fails after all attempts (e.g. device physically disconnected), the last error
