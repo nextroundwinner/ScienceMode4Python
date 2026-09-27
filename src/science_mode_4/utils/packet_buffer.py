@@ -12,6 +12,10 @@ from .connection import Connection
 class PacketBuffer():
     """Class for handling a buffer and provides methods to take care of arriving acknowledges"""
 
+    # commands sent by PC for which device sends no acknowledge
+    # (DL_SEND_FILE_ACK is itself the acknowledge for a DL_SEND_FILE block from device)
+    _COMMANDS_WITHOUT_ACKNOWLEDGE = frozenset({Commands.DL_SEND_FILE_ACK})
+
     def __init__(self, conn: Connection, packet_factory: PacketFactory):
         self._buffer: bytes = b""
         # dict with command and packet number as key and open count as value
@@ -39,28 +43,25 @@ class PacketBuffer():
 
     def add_open_acknowledge(self, packet: Packet):
         """Adds packet to list of packets, that are waiting for a acknowledge"""
+        if packet.command in PacketBuffer._COMMANDS_WITHOUT_ACKNOWLEDGE:
+            return
         key = packet.command + 1, packet.number
-        if key in self._open_acknowledges:
-            self._open_acknowledges[key] += 1
-        else:
-            self._open_acknowledges[key] = 1
+        self._open_acknowledges[key] = self._open_acknowledges.get(key, 0) + 1
 
 
     def remove_open_acknowledge(self, packet: Packet):
         """Remove packet from list of packets, that are waiting for a acknowledge"""
         key = packet.command + 1, packet.number
-        if key in self._open_acknowledges:
-            self._open_acknowledges[key] -= 1
-        else:
+        if key not in self._open_acknowledges:
             raise ProtocolError(f"Remove non existing acknowledge from packet buffer, command {packet.command}, number {packet.number}")
+        self._decrement_open_acknowledge(key)
 
 
     def print_open_acknowledge(self):
         """Print open acknowledges"""
         logger().info("Open acknowledges")
         for key, value in self._open_acknowledges.items():
-            if value != 0:
-                logger().info("Command: %s, number: %d, value: %d", Commands(key[0]).name, key[1], value)
+            logger().info("Command: %s, number: %d, value: %d", Commands(key[0]).name, key[1], value)
 
 
     def get_packet_from_buffer(self, do_update_buffer = True) -> Packet | None:
@@ -78,12 +79,10 @@ class PacketBuffer():
         ack_data = Protocol.extract_packet_data(packet_data)
         # check if we wait for this acknowledge
         key = ack_data[0], ack_data[1]
-        wait_ack = self._open_acknowledges.get(key)
-        if wait_ack is None:
-            if ack_data[0] not in [Commands.DL_SEND_LIVE_DATA, Commands.DL_SEND_FILE]:
-                logger().warning("Unexpected acknowledge command: %s, number: %d", Commands(ack_data[0]).name, ack_data[1])
-        else:
-            self._open_acknowledges[ack_data[0], ack_data[1]] -= 1
+        if key in self._open_acknowledges:
+            self._decrement_open_acknowledge(key)
+        elif ack_data[0] not in [Commands.DL_SEND_LIVE_DATA, Commands.DL_SEND_FILE]:
+            logger().warning("Unexpected acknowledge command: %s, number: %d", Commands(ack_data[0]).name, ack_data[1])
 
         # remove from buffer
         self._buffer = self._buffer[start_stop[1] + 1:]
@@ -95,3 +94,13 @@ class PacketBuffer():
         """Clear internal buffer and buffer from connection"""
         self._connection.clear_buffer()
         self._buffer = b""
+
+
+    def _decrement_open_acknowledge(self, key: tuple[int, int]):
+        """Decrements open count for key, entries are removed when reaching 0, so a key
+        is only present while an acknowledge is really expected"""
+        count = self._open_acknowledges[key] - 1
+        if count > 0:
+            self._open_acknowledges[key] = count
+        else:
+            del self._open_acknowledges[key]

@@ -2,11 +2,19 @@
 # pylint: disable=missing-function-docstring
 # test names are self-explanatory, docstrings would only restate them
 
+import logging
+
+import pytest
+
+from science_mode_4.device_p24 import DeviceP24
+from science_mode_4.dyscom.dyscom_send_file import PacketDyscomSendFileAck
 from science_mode_4.protocol.commands import Commands
+from science_mode_4.protocol.exceptions import ProtocolError
 from science_mode_4.protocol.packet_factory import PacketFactory
 from science_mode_4.protocol.protocol import Protocol
 from science_mode_4.protocol.types import ResultAndError
 from science_mode_4.utils.connection import Connection
+from science_mode_4.utils.null_connection import NullConnection
 from science_mode_4.utils.packet_buffer import PacketBuffer
 
 
@@ -93,3 +101,64 @@ def test_get_packet_from_buffer_without_leading_garbage_still_works():
 
     assert ack is not None
     assert packet_buffer.buffer == trailing_bytes
+
+
+def _open_acknowledges(packet_buffer: PacketBuffer) -> dict[tuple[int, int], int]:
+    return dict(packet_buffer._open_acknowledges) # pylint: disable=protected-access
+
+
+def test_low_level_send_functions_register_one_open_acknowledge_per_packet():
+    # regression test: send_init/send_channel_config/send_stop called add_open_acknowledge
+    # although ProtocolHelper.send_packet already does, so every packet was counted twice
+    device = DeviceP24(NullConnection())
+    device.get_layer_low_level().send_stop()
+
+    assert _open_acknowledges(device.packet_buffer) == {(Commands.LOW_LEVEL_STOP_ACK, 1): 1}
+
+
+def test_send_file_ack_registers_no_open_acknowledge():
+    # regression test: DL_SEND_FILE_ACK registered an expected acknowledge for command + 1
+    # (DL_SYS), which device never sends, so one stale entry piled up per file block
+    packet_buffer = PacketBuffer(_FakeConnection(b""), PacketFactory())
+    packet_buffer.add_open_acknowledge(PacketDyscomSendFileAck(1))
+
+    assert not _open_acknowledges(packet_buffer)
+
+
+def test_received_acknowledge_removes_open_entry():
+    packet_buffer = PacketBuffer(_FakeConnection(_build_reset_ack_bytes()), PacketFactory())
+    packet_buffer.add_open_acknowledge(_WirePacket(Commands.RESET, b""))
+
+    assert packet_buffer.get_packet_from_buffer() is not None
+    assert not _open_acknowledges(packet_buffer)
+
+
+def test_duplicate_acknowledge_is_reported_as_unexpected_and_does_not_go_negative(caplog):
+    # regression test: an entry already at 0 is not None, so a duplicate acknowledge
+    # decremented it to -1 instead of logging it as unexpected
+    packet_bytes = _build_reset_ack_bytes()
+    packet_buffer = PacketBuffer(_FakeConnection(packet_bytes + packet_bytes), PacketFactory())
+    packet_buffer.add_open_acknowledge(_WirePacket(Commands.RESET, b""))
+
+    packet_buffer.get_packet_from_buffer()
+    with caplog.at_level(logging.WARNING, logger="science_mode_4"):
+        packet_buffer.get_packet_from_buffer(False)
+
+    assert not _open_acknowledges(packet_buffer)
+    assert any("Unexpected acknowledge" in r.getMessage() for r in caplog.records)
+
+
+def test_remove_open_acknowledge_removes_entry_and_raises_if_not_open():
+    packet_buffer = PacketBuffer(_FakeConnection(b""), PacketFactory())
+    packet = _WirePacket(Commands.RESET, b"")
+    packet_buffer.add_open_acknowledge(packet)
+    packet_buffer.add_open_acknowledge(packet)
+
+    packet_buffer.remove_open_acknowledge(packet)
+    assert _open_acknowledges(packet_buffer) == {(Commands.RESET_ACK, 0): 1}
+
+    packet_buffer.remove_open_acknowledge(packet)
+    assert not _open_acknowledges(packet_buffer)
+
+    with pytest.raises(ProtocolError):
+        packet_buffer.remove_open_acknowledge(packet)

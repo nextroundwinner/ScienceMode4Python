@@ -41,7 +41,6 @@ class LayerLowLevel(Layer):
         p.mode = mode
         p.high_voltage_source = high_voltage_source
         self.send_packet(p)
-        self._packet_buffer.add_open_acknowledge(p)
         logger().info("Low level send init")
 
 
@@ -54,7 +53,6 @@ class LayerLowLevel(Layer):
         p.connector = connector
         p.points = points
         self.send_packet(p)
-        self._packet_buffer.add_open_acknowledge(p)
         logger().info("Low level send channel config")
 
 
@@ -62,5 +60,4 @@ class LayerLowLevel(Layer):
         """Send low level stop command"""
         p = PacketLowLevelStop()
         self.send_packet(p)
-        self._packet_buffer.add_open_acknowledge(p)
         logger().info("Low level send stop")

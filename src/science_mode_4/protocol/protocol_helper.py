@@ -1,6 +1,7 @@
 """Helper class for sending packets to connection"""
 
 import asyncio
+import time
 
 from science_mode_4.general.general_error import PacketGeneralError
 from science_mode_4.general.general_unknown_command import PacketGeneralUnknownCommand
@@ -35,10 +36,11 @@ class ProtocolHelper:
         packet_buffer.clear_buffer()
         ProtocolHelper.send_packet(packet, packet_number, packet_buffer)
 
-        # calculate number of loops to reach timeout
+        # use a deadline instead of counting sleep cycles, because asyncio.sleep() usually
+        # sleeps longer than requested (e.g. ~15.6 ms timer resolution on Windows)
         sleep_duration = 0.01
-        counter = timeout_in_seconds / sleep_duration
-        while counter > 0:
+        deadline = time.monotonic() + timeout_in_seconds
+        while True:
             while True:
                 ack = packet_buffer.get_packet_from_buffer()
                 if ack is None:
@@ -48,19 +50,35 @@ class ProtocolHelper:
                 if (ack.command == packet.command + 1) and (ack.number == packet.number):
                     return ack
 
-                # check if we got an error
+                # check if we got an error, we stop waiting then, so the acknowledge
+                # for packet is no longer expected
                 if ack.command == Commands.GENERAL_ERROR:
                     ge: PacketGeneralError = ack
+                    packet_buffer.remove_open_acknowledge(packet)
                     raise ProtocolError(f"General error packet {ge.result_error.name}")
                 if ack.command == Commands.UNKNOWN_COMMAND:
                     uc: PacketGeneralUnknownCommand = ack
+                    packet_buffer.remove_open_acknowledge(packet)
                     raise ProtocolError(f"Unknown command packet {uc.result_error.name}")
 
                 # discard this stale/mismatched acknowledge and check the buffer again immediately
 
+            # check deadline after buffer was processed, so an acknowledge that arrived
+            # during the last sleep is still accepted
+            if time.monotonic() >= deadline:
+                break
             await asyncio.sleep(sleep_duration)
-            counter -= 1
 
         # we got no response in time, so remove open acknowledges
         packet_buffer.remove_open_acknowledge(packet)
-        raise ProtocolError(f"No valid answer for packet {packet.command}")
+        raise ProtocolError(f"No valid answer for packet {ProtocolHelper._command_name(packet.command)} "
+                            f"within {timeout_in_seconds}s")
+
+
+    @staticmethod
+    def _command_name(command: int) -> str:
+        """Returns name of command, or the number if it is no known command"""
+        try:
+            return Commands(command).name
+        except ValueError:
+            return str(command)
